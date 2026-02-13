@@ -82,8 +82,9 @@ fun LoginScreen(navController: NavController,
                         onClick = {
                             scope.launch {
                                 snackbarHostState.showSnackbar("Login Valido, Entrando")
+                                loginScreenViewModel.login(navController)
+
                             }
-                            loginScreenViewModel.login(navController)
                         }
                     ) {
                         Text("Login")

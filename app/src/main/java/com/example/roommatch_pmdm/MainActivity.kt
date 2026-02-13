@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.roommatch_pmdm.presentation.navigation.NavGraph
 import com.example.roommatch_pmdm.ui.theme.RoomMatchPMDMTheme
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
