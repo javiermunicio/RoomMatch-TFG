@@ -1,32 +1,26 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.domain.model.Rooms
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.roommatch_pmdm.domain.usecase.DeleteRoomUseCase
+import com.example.roommatch_pmdm.domain.usecase.ListRoomUseCase
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlin.collections.map
 
-class MainScreenViewModel : ViewModel(){
-    private val _rooms = MutableStateFlow<List<Rooms>>(
-        listOf(
-            Rooms("Piso", "Dirección Aleatoria, 1", 400,"Compañero 1"),
-            Rooms("Piso", "Dirección Aleatoria, 2", 700,"Compañero 2"),
-            Rooms("Chalet", "Dirección Aleatoria, 3", 1200,"ComCompañero pañero 3"),
-            Rooms("Piso", "Dirección Aleatoria, 4", 450,"Compañero 4"),
-            Rooms("Chalet", "Dirección Aleatoria, 5", 800,"Compañero 5"),
-            Rooms("Chalet", "Dirección Aleatoria, 6", 500,"Compañero 6")
+class MainScreenViewModel(
+    private val listRoomUseCase: ListRoomUseCase,
+    private val deleteRoomUseCase: DeleteRoomUseCase
+): ViewModel(){
+    private val _rooms = listRoomUseCase()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val rooms:StateFlow<List<Rooms>> = _rooms
 
-        )
-    )
-    val rooms = _rooms.asStateFlow()
-
-    fun toggleCheck(direction: String) {
-        _rooms.value = _rooms.value.map { room ->
-            if (room.direction == direction) {
-                room.copy(check = !room.check)
-            } else {
-                room
-            }
-        }
+    fun deleteMovie(id: String) {
+        viewModelScope.launch {
+            deleteRoomUseCase(id) }
     }
-
 }

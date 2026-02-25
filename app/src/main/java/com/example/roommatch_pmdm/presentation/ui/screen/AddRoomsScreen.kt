@@ -26,11 +26,12 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.presentation.ui.components.ActionMenu
 import com.example.roommatch_pmdm.presentation.viewmodel.AddRoomsScreenViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AddRoomsScreen(
     navController: NavController,
-    addRoomsScreenViewModel: AddRoomsScreenViewModel = viewModel()
+    addRoomsScreenViewModel: AddRoomsScreenViewModel = koinViewModel()
 ){
     val room by addRoomsScreenViewModel.room.collectAsState()
     val showDialog = remember { mutableStateOf(false) }

@@ -1,5 +1,6 @@
 package com.example.roommatch_pmdm.domain.model
 
+
 data class Rooms(
     val buildingTipe : String,
     val direction: String,

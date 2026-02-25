@@ -39,11 +39,12 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.presentation.ui.components.ActionMenu
 import com.example.roommatch_pmdm.presentation.viewmodel.MainScreenViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MainScreen(
     navController: NavController,
-    mainScreenViewModel: MainScreenViewModel = viewModel()
+    mainScreenViewModel: MainScreenViewModel = koinViewModel()
 ) {
     val rooms by mainScreenViewModel.rooms.collectAsState()
 
