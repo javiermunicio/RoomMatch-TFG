@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "362967611591",
+    "project_id": "roommatch-bf2fc",
+    "storage_bucket": "roommatch-bf2fc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:362967611591:android:576050de1e9a4730b126e2",
+        "android_client_info": {
+          "package_name": "com.example.roommatch_pmdm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCitjXqzeDRSMvXG4hS_0F8uMqy_wE5TNs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
