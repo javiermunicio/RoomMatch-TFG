@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.ui.components.ActionMenu
 import com.example.roommatch_pmdm.presentation.viewmodel.MainScreenViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -95,14 +96,6 @@ fun MainScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            IconButton(
-                                onClick = { mainScreenViewModel.toggleCheck(room.direction) }
-                            ) {
-                                Icon(
-                                    imageVector = if (room.check) Icons.Filled.Remove else Icons.Filled.Add,
-                                    contentDescription = if (room.check) "Cerrar" else "Abrir"
-                                )
-                            }
 
                             Text(
                                 text = room.direction,

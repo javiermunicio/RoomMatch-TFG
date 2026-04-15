@@ -1,115 +1,167 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
-
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.roommatch_pmdm.presentation.viewmodel.RegisterScreenViewModel
-import kotlinx.coroutines.launch
+import com.example.roommatch_pmdm.presentation.navigation.Screen
+import com.example.roommatch_pmdm.presentation.viewmodel.RegisterViewModel
 
 @Composable
-fun RegisterScreen(navController: NavController,
-                   registerScreenViewModel: RegisterScreenViewModel = viewModel()) {
-    val username by registerScreenViewModel.username.collectAsState()
-    val password by registerScreenViewModel.password.collectAsState()
-    val email by registerScreenViewModel.email.collectAsState()
-    val loginEnabled by remember {
-        derivedStateOf {
-            username.isNotBlank() && password.isNotBlank()
+fun RegisterScreen(
+    navController: NavController,
+    viewModel: RegisterViewModel = viewModel()
+) {
+    val username = viewModel.username.collectAsState()
+    val email = viewModel.email.collectAsState()
+    val password = viewModel.password.collectAsState()
+    val confirmPassword = viewModel.confirmPassword.collectAsState()
+    val isLoading = viewModel.isLoading.collectAsState()
+    val registerSuccess = viewModel.registerSuccess.collectAsState()
+    val errorMessage = viewModel.errorMessage.collectAsState()
+
+    if (registerSuccess.value) {
+        navController.navigate(Screen.Home.route) {
+            popUpTo(Screen.Register.route) { inclusive = true }
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFE8D5E8))
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(32.dp))
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        content = { innerPadding ->
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-            ) {
-                TextField(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    value = username,
-                    onValueChange = { registerScreenViewModel.setUsername(it) },
-                    label = {
-                        Text("Username")
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextField(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    value = email,
-                    onValueChange = { registerScreenViewModel.setEmail(it) },
-                    label = {
-                        Text("Email")
-                    }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextField(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    value = password,
-                    onValueChange = { registerScreenViewModel.setPassword(it) },
-                    label = {
-                        Text("Password")
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    enabled = loginEnabled,
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Iniciando Sesion")
-                        }
-                        registerScreenViewModel.register(navController)
-                    }
-                ) {
-                    Text("Register")
-                }
+        Surface(
+            modifier = Modifier.size(80.dp),
+            color = Color.White,
+            shape = MaterialTheme.shapes.extraLarge
+        ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("❤️", fontSize = 40.sp)
             }
-
         }
-    )
-}
 
-@Preview(showBackground = true)
-@Composable
-fun RegisterScreenPreview() {
-    RegisterScreen(rememberNavController())
+        Text(
+            text = "RoomMatch",
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color(0xFF1E88E5),
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
+
+        OutlinedTextField(
+            value = username.value,
+            onValueChange = { viewModel.onUsernameChanged(it) },
+            label = { Text("Usuario") },
+            leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            shape = MaterialTheme.shapes.large,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color(0xFF1E88E5),
+                focusedBorderColor = Color(0xFF1E88E5)
+            )
+        )
+
+        OutlinedTextField(
+            value = email.value,
+            onValueChange = { viewModel.onEmailChanged(it) },
+            label = { Text("Correo Electrónico") },
+            leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            shape = MaterialTheme.shapes.large,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color(0xFF1E88E5),
+                focusedBorderColor = Color(0xFF1E88E5)
+            )
+        )
+
+        OutlinedTextField(
+            value = password.value,
+            onValueChange = { viewModel.onPasswordChanged(it) },
+            label = { Text("Contraseña") },
+            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            shape = MaterialTheme.shapes.large,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color(0xFF1E88E5),
+                focusedBorderColor = Color(0xFF1E88E5)
+            )
+        )
+
+        OutlinedTextField(
+            value = confirmPassword.value,
+            onValueChange = { viewModel.onConfirmPasswordChanged(it) },
+            label = { Text("Confirmar Contraseña") },
+            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = MaterialTheme.shapes.large,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color(0xFF1E88E5),
+                focusedBorderColor = Color(0xFF1E88E5)
+            )
+        )
+
+        if (errorMessage.value != null) {
+            Text(
+                text = errorMessage.value!!,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        Button(
+            onClick = { viewModel.register() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+            shape = MaterialTheme.shapes.extraLarge,
+            enabled = !isLoading.value
+        ) {
+            if (isLoading.value) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+            } else {
+                Text("Crear Cuenta", fontSize = 16.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+            Text("¿Ya tienes cuenta? ", color = Color(0xFF1E88E5))
+            TextButton(onClick = { navController.popBackStack() }) {
+                Text("Inicia Sesión", color = Color(0xFF1E88E5))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+    }
 }

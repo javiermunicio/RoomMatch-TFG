@@ -5,8 +5,10 @@ import com.example.roommatch_pmdm.domain.usecase.AddRoomUseCase
 import com.example.roommatch_pmdm.domain.usecase.DeleteRoomUseCase
 import com.example.roommatch_pmdm.domain.usecase.ListRoomUseCase
 import com.example.roommatch_pmdm.presentation.viewmodel.AddRoomsScreenViewModel
+import com.example.roommatch_pmdm.presentation.viewmodel.MainScreenViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.scope.get
 import org.koin.dsl.module
 
 val appModule = module{
@@ -17,4 +19,5 @@ val appModule = module{
     factory { DeleteRoomUseCase(get()) }
     factory { ListRoomUseCase(get()) }
     viewModel { AddRoomsScreenViewModel(get()) }
+    viewModel { MainScreenViewModel(get(), get()) }
 }

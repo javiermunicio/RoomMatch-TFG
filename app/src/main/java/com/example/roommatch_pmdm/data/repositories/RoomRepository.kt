@@ -1,6 +1,6 @@
 package com.example.roommatch_pmdm.data.repositories
 
-import com.example.roommatch_pmdm.domain.Rooms
+import com.example.roommatch_pmdm.domain.model.Rooms
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose

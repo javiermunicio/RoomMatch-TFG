@@ -62,7 +62,7 @@ fun ActionMenu(title:String, navController: NavController) {
                     onClick = {
                         // Acción 1
                         expanded = false
-                        navController.navigate(Screen.Main.route)
+                        navController.navigate(Screen.Home.route)
                     }
                 )
                 DropdownMenuItem(

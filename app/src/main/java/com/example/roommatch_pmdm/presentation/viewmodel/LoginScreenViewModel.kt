@@ -1,37 +1,60 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.navigation.NavController
-import com.example.roommatch_pmdm.presentation.navigation.Screen
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-class LoginScreenViewModel : ViewModel(){
+class LoginViewModel : ViewModel() {
+
     private val _username = MutableStateFlow("")
     val username: StateFlow<String> = _username
+
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password
 
-    fun setUsername(username: String) {
-        _username.value = username
-    }
-    fun setPassword(password: String) {
-        _password.value = password
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _loginSuccess = MutableStateFlow(false)
+    val loginSuccess: StateFlow<Boolean> = _loginSuccess
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    fun onUsernameChanged(newUsername: String) {
+        _username.value = newUsername
     }
 
-    fun clear() {
-        _username.value = ""
-        _password.value = ""
+    fun onPasswordChanged(newPassword: String) {
+        _password.value = newPassword
     }
 
-    fun login(navController: NavController) {
-        val isValid = username.value.isNotBlank() && password.value.isNotBlank()
-        if (isValid) {
-            navController.navigate(Screen.Main.route)
+    fun login() {
+        viewModelScope.launch {
+            if (username.value.isEmpty() || password.value.isEmpty()) {
+                _errorMessage.value = "Por favor completa todos los campos"
+                return@launch
+            }
+
+            _isLoading.value = true
+
+            try {
+                // Simulación de login con Firebase
+                // TODO: Integrar con Firebase Authentication
+                _loginSuccess.value = true
+                _errorMessage.value = null
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+                _loginSuccess.value = false
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
-    fun register(navController: NavController) {
-        navController.navigate(Screen.Register.route)
+    fun clearError() {
+        _errorMessage.value = null
     }
 }
