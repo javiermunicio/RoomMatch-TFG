@@ -1,5 +1,6 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,12 +14,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.roommatch_pmdm.R
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.LoginViewModel
 
@@ -49,27 +54,10 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center
     ) {
         // Logo y título
-        Surface(
-            modifier = Modifier
-                .size(80.dp)
-                .padding(bottom = 16.dp),
-            color = Color.White,
-            shape = MaterialTheme.shapes.extraLarge
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("❤️", fontSize = 40.sp)
-            }
-        }
-
-        Text(
-            text = "RoomMatch",
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF1E88E5)
-        )
-
+            Image(
+                painter = painterResource(id = R.drawable.logo_login_roommatch),
+                contentDescription = "Imagen de ejemplo"
+            )
         Text(
             text = "Encuentra a tu compañero de piso ideal",
             style = MaterialTheme.typography.bodySmall,
@@ -160,4 +148,9 @@ fun LoginScreen(
             }
         }
     }
+}
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    LoginScreen(rememberNavController())
 }

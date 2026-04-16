@@ -1,5 +1,6 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,11 +13,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.roommatch_pmdm.R
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.RegisterViewModel
 
@@ -49,22 +54,10 @@ fun RegisterScreen(
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
-        Surface(
-            modifier = Modifier.size(80.dp),
-            color = Color.White,
-            shape = MaterialTheme.shapes.extraLarge
-        ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("❤️", fontSize = 40.sp)
-            }
-        }
-
-        Text(
-            text = "RoomMatch",
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF1E88E5),
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
+            Image(
+                painter = painterResource(id = R.drawable.logo_login_roommatch),
+                contentDescription = "Imagen de ejemplo"
+            )
 
         OutlinedTextField(
             value = username.value,
@@ -164,4 +157,9 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
     }
+}
+@Preview(showBackground = true)
+@Composable
+fun RegisterScreenPreview() {
+    RegisterScreen(rememberNavController())
 }

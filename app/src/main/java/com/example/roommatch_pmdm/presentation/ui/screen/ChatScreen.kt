@@ -15,9 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.domain.model.ChatUser
 import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
@@ -202,4 +204,9 @@ fun MessageBubble(message: com.example.roommatch_pmdm.domain.model.ChatMessage) 
             )
         }
     }
+}
+@Preview(showBackground = true)
+@Composable
+fun ChatScreenPreview() {
+   ChatListScreen(rememberNavController())
 }
