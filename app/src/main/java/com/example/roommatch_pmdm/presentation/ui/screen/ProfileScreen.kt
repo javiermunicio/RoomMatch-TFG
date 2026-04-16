@@ -1,140 +1,287 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 
-/**
- * Pantalla de Perfil - Gestión de información personal del usuario
- */
+// ── Colores de la app ────────────────────────────────────────────────────────
+private val RoomBlue   = Color(0xFF4A90D9)
+private val RoomRed    = Color(0xFFF26B6B)
+private val ChipColor  = Color(0xFFEF7F7F)
+private val BgGray     = Color(0xFFF5F5F5)
+private val TextGray   = Color(0xFF888888)
+
 @Composable
 fun ProfileScreen() {
     var isEditMode by remember { mutableStateOf(false) }
-    var fullName by remember { mutableStateOf("Juan García") }
-    var age by remember { mutableStateOf("26") }
-    var location by remember { mutableStateOf("Madrid") }
-    var bio by remember { mutableStateOf("Busco compañero tranquilo para compartir piso") }
-    var budget by remember { mutableStateOf("600") }
-    var habits by remember { mutableStateOf("No fuma, tiene mascotas") }
-    var preferences by remember { mutableStateOf("Apartamento tranquilo, luz natural") }
+    var fullName   by remember { mutableStateOf("Federica") }
+    var age        by remember { mutableStateOf("20") }
+    var location   by remember { mutableStateOf("Centro, Madrid") }
+    var bio        by remember { mutableStateOf("") }
+    var budget     by remember { mutableStateOf("600") }
+
+    // Rasgos como lista editable (chips del diseño)
+    var traits by remember {
+        mutableStateOf(
+            listOf("Responsable", "Respetuosa", "Limpia",
+                "Empatica", "Tranquila", "Organizada",
+                "Comunicativa", "Considerada", "Flexible")
+        )
+    }
+    var newTrait by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(BgGray)
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
     ) {
-        // Header con botón de edición
-        Row(
+
+        // ── Header blanco ────────────────────────────────────────────────────
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.White,
+            shadowElevation = 2.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Título "Edita tu Perfil"
+                Text(
+                    text = if (isEditMode) "Edita tu Perfil" else "Mi Perfil",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = RoomBlue,
+                    fontSize = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Foto de perfil circular
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFDDDDDD))
+                        .border(3.dp, RoomBlue, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = "https://via.placeholder.com/120",
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Nombre y edad en azul
+                Text(
+                    text = "$fullName, $age años",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = RoomBlue,
+                    fontSize = 20.sp
+                )
+
+                // Ubicación
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = TextGray,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = location,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGray,
+                        modifier = Modifier.padding(start = 2.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ── Sección de rasgos (chips) ────────────────────────────────────────
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(horizontal = 16.dp),
+            color = Color.White,
+            shape = MaterialTheme.shapes.medium,
+            shadowElevation = 1.dp
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "Rasgos de personalidad",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextGray,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                // Chips en FlowRow
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    traits.forEach { trait ->
+                        TraitChip(
+                            label = trait,
+                            editable = isEditMode,
+                            onRemove = { traits = traits - trait }
+                        )
+                    }
+                }
+
+                // Campo para añadir nuevo rasgo (solo en modo edición)
+                if (isEditMode) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = newTrait,
+                            onValueChange = { newTrait = it },
+                            label = { Text("Añadir rasgo…", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = {
+                                if (newTrait.isNotBlank() && newTrait !in traits) {
+                                    traits = traits + newTrait.trim()
+                                    newTrait = ""
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = "Añadir", tint = RoomBlue)
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ── Información adicional (solo en modo edición) ─────────────────────
+        if (isEditMode) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                color = Color.White,
+                shape = MaterialTheme.shapes.medium,
+                shadowElevation = 1.dp
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    EditField("Nombre",      fullName)   { fullName   = it }
+                    EditField("Edad",        age)        { age        = it }
+                    EditField("Ubicación",   location)   { location   = it }
+                    EditField("Bio",         bio)        { bio        = it }
+                    EditField("Presupuesto", budget)     { budget     = it }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        // ── Botón principal ──────────────────────────────────────────────────
+        Button(
+            onClick = { isEditMode = !isEditMode },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(50.dp),
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = ButtonDefaults.buttonColors(containerColor = RoomBlue)
+        ) {
+            Text(
+                text = if (isEditMode) "Guardar cambios" else "Editar Perfil",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+// ── Chip de rasgo ─────────────────────────────────────────────────────────────
+@Composable
+private fun TraitChip(label: String, editable: Boolean, onRemove: () -> Unit) {
+    Surface(
+        color = ChipColor,
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Mi Perfil",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                text = label,
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
             )
-
-            IconButton(onClick = { isEditMode = !isEditMode }) {
-                Icon(Icons.Filled.Edit, contentDescription = "Editar perfil")
+            if (editable) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Eliminar $label",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                )
             }
         }
-
-        // Información del perfil
-        if (isEditMode) {
-            // Modo edición
-            EditableProfileField("Nombre", fullName) { fullName = it }
-            EditableProfileField("Edad", age) { age = it }
-            EditableProfileField("Ubicación", location) { location = it }
-            EditableProfileField("Bio", bio) { bio = it }
-            EditableProfileField("Presupuesto", budget) { budget = it }
-            EditableProfileField("Hábitos", habits) { habits = it }
-            EditableProfileField("Preferencias", preferences) { preferences = it }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = { isEditMode = false },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Guardar cambios")
-            }
-        } else {
-            // Modo visualización
-            ProfileInfoRow("Nombre", fullName)
-            ProfileInfoRow("Edad", age)
-            ProfileInfoRow("Ubicación", location)
-            ProfileInfoRow("Bio", bio)
-            ProfileInfoRow("Presupuesto", "€$budget/mes")
-            ProfileInfoRow("Hábitos", habits)
-            ProfileInfoRow("Preferencias", preferences)
-        }
     }
 }
 
+//Campo editable
 @Composable
-fun ProfileInfoRow(label: String, value: String) {
-    Column(
+private fun EditField(label: String, value: String, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(label, fontSize = 12.sp) },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.Gray
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-        Divider(modifier = Modifier.padding(top = 8.dp))
-    }
+            .padding(bottom = 12.dp),
+        singleLine = true
+    )
 }
 
-@Composable
-fun EditableProfileField(label: String, value: String, onValueChange: (String) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.Gray
-        )
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            singleLine = true
-        )
-    }
-}
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    ProfileScreenPreview()
+    ProfileScreen()
 }

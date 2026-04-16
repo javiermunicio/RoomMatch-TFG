@@ -13,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.domain.model.UserCard
 import com.example.roommatch_pmdm.presentation.viewmodel.MatchingViewModel
@@ -162,4 +164,9 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit) {
             }
         }
     )
+}
+@Preview
+@Composable
+fun MatchingScreenPreview() {
+    MatchingScreen()
 }
