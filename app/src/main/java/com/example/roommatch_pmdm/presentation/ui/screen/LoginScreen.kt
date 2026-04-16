@@ -38,7 +38,6 @@ fun LoginScreen(
     val loginSuccess = viewModel.loginSuccess.collectAsState()
     val errorMessage = viewModel.errorMessage.collectAsState()
 
-    // Navegar a Home si login exitoso
     if (loginSuccess.value) {
         navController.navigate(Screen.Home.route) {
             popUpTo(Screen.Login.route) { inclusive = true }
@@ -53,7 +52,6 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Logo y título
             Image(
                 painter = painterResource(id = R.drawable.logo_login_roommatch),
                 contentDescription = "Imagen de ejemplo"
@@ -67,7 +65,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Campo Usuario
         OutlinedTextField(
             value = username.value,
             onValueChange = { viewModel.onUsernameChanged(it) },
@@ -83,7 +80,6 @@ fun LoginScreen(
             )
         )
 
-        // Campo Contraseña
         OutlinedTextField(
             value = password.value,
             onValueChange = { viewModel.onPasswordChanged(it) },
@@ -100,7 +96,6 @@ fun LoginScreen(
             )
         )
 
-        // Mensaje de error
         if (errorMessage.value != null) {
             Text(
                 text = errorMessage.value!!,
@@ -110,7 +105,6 @@ fun LoginScreen(
             )
         }
 
-        // Botón Iniciar Sesión
         Button(
             onClick = { viewModel.login() },
             modifier = Modifier
@@ -135,7 +129,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Link a registro
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
