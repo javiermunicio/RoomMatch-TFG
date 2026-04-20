@@ -26,11 +26,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.R
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.LoginViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel = koinViewModel()
 ) {
     val username = viewModel.username.collectAsState()
     val password = viewModel.password.collectAsState()
@@ -68,7 +69,7 @@ fun LoginScreen(
         OutlinedTextField(
             value = username.value,
             onValueChange = { viewModel.onUsernameChanged(it) },
-            label = { Text("Usuario") },
+            label = { Text("Correo electrónico") },
             leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()

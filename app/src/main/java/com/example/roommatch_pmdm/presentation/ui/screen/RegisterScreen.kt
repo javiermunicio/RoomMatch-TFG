@@ -24,11 +24,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.R
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.RegisterViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun RegisterScreen(
     navController: NavController,
-    viewModel: RegisterViewModel = viewModel()
+    viewModel: RegisterViewModel = koinViewModel()
 ) {
     val username = viewModel.username.collectAsState()
     val email = viewModel.email.collectAsState()

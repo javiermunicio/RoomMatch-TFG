@@ -8,9 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.presentation.navigation.NavGraph
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.ui.theme.RoomMatchTheme
+import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,10 +24,12 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    // Verificar si usuario está autenticado
-                    // TODO: Implementar verificación real de autenticación
-                    val startDestination = Screen.Login.route
-
+                    val authRepository: AuthRepository = koinInject()  // ← inyectar
+                    val startDestination = if (authRepository.isLoggedIn) {
+                        Screen.Home.route
+                    } else {
+                        Screen.Login.route
+                    }
                     NavGraph(
                         navController = navController,
                         startDestination = startDestination
