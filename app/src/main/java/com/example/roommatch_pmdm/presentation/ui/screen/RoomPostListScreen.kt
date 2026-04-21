@@ -24,12 +24,13 @@ fun RoomPostListScreen(
     navController: NavController,
     viewModel: RoomPostListViewModel = koinViewModel()
 ) {
-    val roomPosts by viewModel.roomPosts.collectAsState()
+    val roomPosts   by viewModel.roomPosts.collectAsState()
+    val currentUid  by viewModel.currentUserId.collectAsState()   // ← nuevo
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate(Screen.AddRooms.route) },
+                onClick        = { navController.navigate(Screen.AddRooms.route) },
                 containerColor = Color(0xFF4A90D9)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Publicar habitación", tint = Color.White)
@@ -38,7 +39,7 @@ fun RoomPostListScreen(
     ) { innerPadding ->
         if (roomPosts.isEmpty()) {
             Box(
-                modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                modifier        = Modifier.padding(innerPadding).fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -48,12 +49,16 @@ fun RoomPostListScreen(
             }
         } else {
             LazyColumn(
-                modifier = Modifier.padding(innerPadding).fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                modifier        = Modifier.padding(innerPadding).fillMaxSize(),
+                contentPadding  = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items = roomPosts, key = { it.id }) { post ->
-                    RoomPostCard(post = post, onDelete = { viewModel.delete(post.id) })
+                    RoomPostCard(
+                        post        = post,
+                        isOwner     = post.ownerId == currentUid,   // ← pasamos si es el dueño
+                        onDelete    = { viewModel.delete(post.id) }
+                    )
                 }
             }
         }
@@ -61,36 +66,48 @@ fun RoomPostListScreen(
 }
 
 @Composable
-fun RoomPostCard(post: RoomPost, onDelete: () -> Unit) {
+fun RoomPostCard(
+    post: RoomPost,
+    isOwner: Boolean,       // ← nuevo parámetro
+    onDelete: () -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Eliminar anuncio") },
-            text = { Text("¿Eliminar '${post.title}'?") },
-            confirmButton = {
+            title            = { Text("Eliminar anuncio") },
+            text             = { Text("¿Eliminar '${post.title}'?") },
+            confirmButton    = {
                 Button(onClick = { onDelete(); showDialog = false }) { Text("Eliminar") }
             },
-            dismissButton = {
+            dismissButton    = {
                 Button(onClick = { showDialog = false }) { Text("Cancelar") }
             }
         )
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier  = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment     = Alignment.CenterVertically
             ) {
-                Text(post.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                IconButton(onClick = { showDialog = true }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                Text(
+                    post.title,
+                    style      = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier   = Modifier.weight(1f)
+                )
+                // Solo el propietario ve el botón de borrar
+                if (isOwner) {
+                    IconButton(onClick = { showDialog = true }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                    }
                 }
             }
             Text("📍 ${post.address}, ${post.city}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)

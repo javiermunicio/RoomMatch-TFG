@@ -29,11 +29,11 @@ val appModule = module {
 
     // ViewModels
     viewModel { LoginViewModel(get()) }
-    viewModel { RegisterViewModel(get()) }
+    viewModel { RegisterViewModel(get(), get()) }          // ← +UserRepository
     viewModel { MatchingViewModel() }
     viewModel { ChatListViewModel() }
     viewModel { ChatDetailViewModel() }
     viewModel { ProfileViewModel(get(), get()) }
     viewModel { AddRoomPostViewModel(get(), get()) }
-    viewModel { RoomPostListViewModel(get(), get()) }
+    viewModel { RoomPostListViewModel(get(), get(), get()) } // ← +AuthRepository
 }
