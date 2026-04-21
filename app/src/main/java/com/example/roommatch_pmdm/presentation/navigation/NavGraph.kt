@@ -46,13 +46,13 @@ fun NavGraph(
             val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
             ChatDetailScreen(chatUserId = chatUserId)
         }
-        composable(Screen.AddRooms.route){
-            AddRoomsScreen(navController = navController)
+        composable(Screen.AddRooms.route) {
+            AddRoomPostScreen(navController = navController)
         }
 
         // Pantalla de Perfil
         composable(Screen.Profile.route) {
-            ProfileScreen(navController = rememberNavController())
+            ProfileScreen(navController = navController)
         }
     }
 }

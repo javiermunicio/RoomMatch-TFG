@@ -73,6 +73,9 @@ fun HomeScreen(navController: NavController) {
             composable(Screen.Profile.route) {
                 ProfileScreen(navController = navController)
             }
+            composable(Screen.AddRooms.route) {
+                RoomPostListScreen(navController = innerNavController)
+            }
         }
     }
 }

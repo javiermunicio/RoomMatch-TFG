@@ -1,23 +1,15 @@
 package com.example.roommatch_pmdm.di
 
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
-import com.example.roommatch_pmdm.data.repositories.RoomRepository
+import com.example.roommatch_pmdm.data.repositories.RoomPostRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
-import com.example.roommatch_pmdm.domain.usecase.AddRoomUseCase
-import com.example.roommatch_pmdm.domain.usecase.DeleteRoomUseCase
-import com.example.roommatch_pmdm.domain.usecase.ListRoomUseCase
-import com.example.roommatch_pmdm.presentation.viewmodel.AddRoomsScreenViewModel
-import com.example.roommatch_pmdm.presentation.viewmodel.ChatDetailViewModel
-import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
-import com.example.roommatch_pmdm.presentation.viewmodel.LoginViewModel
-import com.example.roommatch_pmdm.presentation.viewmodel.MainScreenViewModel
-import com.example.roommatch_pmdm.presentation.viewmodel.MatchingViewModel
-import com.example.roommatch_pmdm.presentation.viewmodel.ProfileViewModel
-import com.example.roommatch_pmdm.presentation.viewmodel.RegisterViewModel
+import com.example.roommatch_pmdm.domain.usecase.AddRoomPostUseCase
+import com.example.roommatch_pmdm.domain.usecase.DeleteRoomPostUseCase
+import com.example.roommatch_pmdm.domain.usecase.ListRoomPostsUseCase
+import com.example.roommatch_pmdm.presentation.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.core.module.dsl.viewModel
-import org.koin.core.scope.get
 import org.koin.dsl.module
 
 val appModule = module {
@@ -27,13 +19,13 @@ val appModule = module {
 
     // Repositories
     single { AuthRepository(get()) }
-    single { RoomRepository(get()) }
+    single { RoomPostRepository(get()) }
     single { UserRepository(get()) }
 
     // Use cases
-    factory { AddRoomUseCase(get()) }
-    factory { DeleteRoomUseCase(get()) }
-    factory { ListRoomUseCase(get()) }
+    factory { AddRoomPostUseCase(get()) }
+    factory { DeleteRoomPostUseCase(get()) }
+    factory { ListRoomPostsUseCase(get()) }
 
     // ViewModels
     viewModel { LoginViewModel(get()) }
@@ -41,7 +33,7 @@ val appModule = module {
     viewModel { MatchingViewModel() }
     viewModel { ChatListViewModel() }
     viewModel { ChatDetailViewModel() }
-    viewModel { ProfileViewModel(get(), get()) }   // ← AuthRepository + UserRepository
-    viewModel { AddRoomsScreenViewModel(get()) }
-    viewModel { MainScreenViewModel(get(), get()) }
+    viewModel { ProfileViewModel(get(), get()) }
+    viewModel { AddRoomPostViewModel(get(), get()) }
+    viewModel { RoomPostListViewModel(get(), get()) }
 }
