@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,25 +22,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.roommatch_pmdm.presentation.navigation.Screen
+import com.example.roommatch_pmdm.presentation.viewmodel.ProfileViewModel
+import org.koin.androidx.compose.koinViewModel
 
 // ── Colores de la app ────────────────────────────────────────────────────────
-private val RoomBlue   = Color(0xFF4A90D9)
-private val RoomRed    = Color(0xFFF26B6B)
-private val ChipColor  = Color(0xFFEF7F7F)
-private val BgGray     = Color(0xFFF5F5F5)
-private val TextGray   = Color(0xFF888888)
+private val RoomBlue  = Color(0xFF4A90D9)
+private val RoomRed   = Color(0xFFF26B6B)
+private val ChipColor = Color(0xFFEF7F7F)
+private val BgGray    = Color(0xFFF5F5F5)
+private val TextGray  = Color(0xFF888888)
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    navController: NavController,
+    viewModel: ProfileViewModel = koinViewModel()
+) {
     var isEditMode by remember { mutableStateOf(false) }
     var fullName   by remember { mutableStateOf("Federica") }
     var age        by remember { mutableStateOf("20") }
     var location   by remember { mutableStateOf("Centro, Madrid") }
     var bio        by remember { mutableStateOf("") }
     var budget     by remember { mutableStateOf("600") }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // Rasgos como lista editable (chips del diseño)
     var traits by remember {
         mutableStateOf(
             listOf("Responsable", "Respetuosa", "Limpia",
@@ -48,6 +57,29 @@ fun ProfileScreen() {
         )
     }
     var newTrait by remember { mutableStateOf("") }
+
+    // ── Dialog de logout ─────────────────────────────────────────────────────
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Cerrar sesión") },
+            text = { Text("¿Estás seguro de que quieres cerrar sesión?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.logout()
+                    showLogoutDialog = false
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }) { Text("Cerrar sesión", color = Color.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -66,14 +98,28 @@ fun ProfileScreen() {
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Título "Edita tu Perfil"
-                Text(
-                    text = if (isEditMode) "Edita tu Perfil" else "Mi Perfil",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = RoomBlue,
-                    fontSize = 18.sp
-                )
+                // Fila título + botón logout
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.size(48.dp))
+                    Text(
+                        text = if (isEditMode) "Edita tu Perfil" else "Mi Perfil",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = RoomBlue,
+                        fontSize = 18.sp
+                    )
+                    IconButton(onClick = { showLogoutDialog = true }) {
+                        Icon(
+                            Icons.Filled.ExitToApp,
+                            contentDescription = "Cerrar sesión",
+                            tint = RoomRed
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -96,7 +142,6 @@ fun ProfileScreen() {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Nombre y edad en azul
                 Text(
                     text = "$fullName, $age años",
                     style = MaterialTheme.typography.titleLarge,
@@ -105,7 +150,6 @@ fun ProfileScreen() {
                     fontSize = 20.sp
                 )
 
-                // Ubicación
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 4.dp)
@@ -146,7 +190,6 @@ fun ProfileScreen() {
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
-                // Chips en FlowRow
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -160,7 +203,6 @@ fun ProfileScreen() {
                     }
                 }
 
-                // Campo para añadir nuevo rasgo (solo en modo edición)
                 if (isEditMode) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(
@@ -192,7 +234,6 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Información adicional (solo en modo edición) ─────────────────────
         if (isEditMode) {
             Surface(
                 modifier = Modifier
@@ -203,11 +244,11 @@ fun ProfileScreen() {
                 shadowElevation = 1.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    EditField("Nombre",      fullName)   { fullName   = it }
-                    EditField("Edad",        age)        { age        = it }
-                    EditField("Ubicación",   location)   { location   = it }
-                    EditField("Bio",         bio)        { bio        = it }
-                    EditField("Presupuesto", budget)     { budget     = it }
+                    EditField("Nombre",      fullName) { fullName  = it }
+                    EditField("Edad",        age)      { age       = it }
+                    EditField("Ubicación",   location) { location  = it }
+                    EditField("Bio",         bio)      { bio       = it }
+                    EditField("Presupuesto", budget)   { budget    = it }
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -266,7 +307,6 @@ private fun TraitChip(label: String, editable: Boolean, onRemove: () -> Unit) {
     }
 }
 
-//Campo editable
 @Composable
 private fun EditField(label: String, value: String, onChange: (String) -> Unit) {
     OutlinedTextField(
@@ -283,5 +323,5 @@ private fun EditField(label: String, value: String, onChange: (String) -> Unit) 
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    ProfileScreen()
+    ProfileScreen(navController = rememberNavController())
 }

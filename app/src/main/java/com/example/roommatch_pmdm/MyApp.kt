@@ -11,7 +11,7 @@ class MyApp : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@MyApp)
-            modules(appModule)  // solo este, el de di/AppModule.kt
+            modules(appModule)
         }
     }
 }

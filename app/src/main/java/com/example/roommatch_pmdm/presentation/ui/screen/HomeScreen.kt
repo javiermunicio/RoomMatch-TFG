@@ -71,7 +71,7 @@ fun HomeScreen(navController: NavController) {
                 ChatListScreen(navController = navController)
             }
             composable(Screen.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(navController = navController)
             }
         }
     }

@@ -2,12 +2,17 @@ package com.example.roommatch_pmdm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(
+    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository
+) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
     val user: StateFlow<User?> = _user
@@ -18,6 +23,13 @@ class ProfileViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _isSaved = MutableStateFlow(false)
+    val isSaved: StateFlow<Boolean> = _isSaved
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    // Campos editables
     private val _username = MutableStateFlow("")
     val username: StateFlow<String> = _username
 
@@ -44,108 +56,88 @@ class ProfileViewModel : ViewModel() {
     }
 
     private fun loadProfile() {
+        val userId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                // TODO: Cargar desde Firebase
-                val mockUser = User(
-                    id = "1",
-                    username = "federica",
-                    email = "federica@example.com",
-                    fullName = "Federica",
-                    age = 20,
-                    location = "Centro, Madrid",
-                    bio = "Soy una persona responsable y amable",
-                    habits = listOf("Responsable", "Respetuosa", "Limpia"),
-                    preferences = listOf("Empatica", "Tranquila", "Organizada")
-                )
-                _user.value = mockUser
-                populateFields(mockUser)
-            } finally {
-                _isLoading.value = false
-            }
+            userRepository.getUser(userId).fold(
+                onSuccess = { user ->
+                    _user.value = user
+                    populateFields(user)
+                },
+                onFailure = {
+                    _errorMessage.value = "No se pudo cargar el perfil"
+                }
+            )
+            _isLoading.value = false
         }
     }
 
     private fun populateFields(user: User) {
         _username.value = user.username
-        _age.value = user.age.toString()
+        _age.value = if (user.age > 0) user.age.toString() else ""
         _location.value = user.location
         _bio.value = user.bio
-        _budget.value = user.budget.toString()
+        _budget.value = if (user.budget > 0) user.budget.toString() else ""
         _selectedHabits.value = user.habits
         _selectedPreferences.value = user.preferences
     }
 
-    fun toggleEditMode() {
-        _isEditing.value = !_isEditing.value
-    }
-
-    fun onUsernameChanged(newUsername: String) {
-        _username.value = newUsername
-    }
-
-    fun onAgeChanged(newAge: String) {
-        _age.value = newAge
-    }
-
-    fun onLocationChanged(newLocation: String) {
-        _location.value = newLocation
-    }
-
-    fun onBioChanged(newBio: String) {
-        _bio.value = newBio
-    }
-
-    fun onBudgetChanged(newBudget: String) {
-        _budget.value = newBudget
-    }
+    fun toggleEditMode() { _isEditing.value = !_isEditing.value }
+    fun onUsernameChanged(v: String) { _username.value = v }
+    fun onAgeChanged(v: String) { _age.value = v }
+    fun onLocationChanged(v: String) { _location.value = v }
+    fun onBioChanged(v: String) { _bio.value = v }
+    fun onBudgetChanged(v: String) { _budget.value = v }
 
     fun toggleHabit(habit: String) {
-        _selectedHabits.value = if (habit in _selectedHabits.value) {
-            _selectedHabits.value - habit
-        } else {
-            _selectedHabits.value + habit
-        }
+        _selectedHabits.value = if (habit in _selectedHabits.value)
+            _selectedHabits.value - habit else _selectedHabits.value + habit
     }
 
     fun togglePreference(preference: String) {
-        _selectedPreferences.value = if (preference in _selectedPreferences.value) {
-            _selectedPreferences.value - preference
-        } else {
-            _selectedPreferences.value + preference
-        }
+        _selectedPreferences.value = if (preference in _selectedPreferences.value)
+            _selectedPreferences.value - preference else _selectedPreferences.value + preference
     }
 
     fun saveProfile() {
+        val userId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val updatedUser = _user.value?.copy(
-                    username = _username.value,
-                    age = _age.value.toIntOrNull() ?: 0,
-                    location = _location.value,
-                    bio = _bio.value,
-                    budget = _budget.value.toIntOrNull() ?: 0,
-                    habits = _selectedHabits.value,
-                    preferences = _selectedPreferences.value,
-                    updatedAt = System.currentTimeMillis()
-                )
-
-                if (updatedUser != null) {
-                    // TODO: Guardar en Firebase
+            val updatedUser = (_user.value ?: User(id = userId)).copy(
+                id = userId,
+                username = _username.value,
+                age = _age.value.toIntOrNull() ?: 0,
+                location = _location.value,
+                bio = _bio.value,
+                budget = _budget.value.toIntOrNull() ?: 0,
+                habits = _selectedHabits.value,
+                preferences = _selectedPreferences.value,
+                updatedAt = System.currentTimeMillis()
+            )
+            userRepository.saveUser(updatedUser).fold(
+                onSuccess = {
                     _user.value = updatedUser
                     _isEditing.value = false
+                    _isSaved.value = true
+                },
+                onFailure = {
+                    _errorMessage.value = "Error al guardar el perfil"
                 }
-            } finally {
-                _isLoading.value = false
-            }
+            )
+            _isLoading.value = false
         }
     }
 
+    fun logout() {
+        authRepository.logout()
+    }
+
+    fun clearError() { _errorMessage.value = null }
+    fun clearSaved() { _isSaved.value = false }
+
     companion object {
         val availableHabits = listOf(
-            "Responsable", "Respetuosa", "Limpia", "Empatica", "Tranquila", "Organizada"
+            "Responsable", "Respetuosa", "Limpia", "Empática", "Tranquila", "Organizada"
         )
         val availablePreferences = listOf(
             "Comunicativa", "Considerada", "Flexible", "Responsable", "Respetuosa", "Limpia"
