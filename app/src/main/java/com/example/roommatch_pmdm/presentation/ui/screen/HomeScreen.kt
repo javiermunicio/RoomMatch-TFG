@@ -70,8 +70,10 @@ fun HomeScreen(navController: NavController) {
                 MatchingScreen()
             }
             composable(Screen.AddRooms.route) {
-                // Tablón de anuncios de habitaciones
                 RoomPostListScreen(navController = innerNavController)
+            }
+            composable(Screen.NewRoomPost.route) {
+                AddRoomPostScreen(navController = innerNavController)
             }
             composable(Screen.ChatList.route) {
                 ChatListScreen(navController = navController)

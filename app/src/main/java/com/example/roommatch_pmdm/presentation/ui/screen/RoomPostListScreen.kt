@@ -30,7 +30,7 @@ fun RoomPostListScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick        = { navController.navigate(Screen.AddRooms.route) },
+                onClick = { navController.navigate(Screen.NewRoomPost.route) }, // ← antes era AddRooms
                 containerColor = Color(0xFF4A90D9)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Publicar habitación", tint = Color.White)

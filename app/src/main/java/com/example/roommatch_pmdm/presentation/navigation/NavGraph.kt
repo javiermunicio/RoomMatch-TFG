@@ -47,12 +47,13 @@ fun NavGraph(
             ChatDetailScreen(chatUserId = chatUserId)
         }
         composable(Screen.AddRooms.route) {
-            AddRoomPostScreen(navController = navController)
+            RoomPostListScreen(navController = navController)
         }
-
-        // Pantalla de Perfil
         composable(Screen.Profile.route) {
             ProfileScreen(navController = navController)
+        }
+        composable(Screen.AddRooms.route) {
+            AddRoomPostScreen(navController = navController)
         }
     }
 }

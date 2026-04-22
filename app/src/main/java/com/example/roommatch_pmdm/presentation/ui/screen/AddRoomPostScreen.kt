@@ -6,8 +6,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.presentation.ui.components.ActionMenu
 import com.example.roommatch_pmdm.presentation.viewmodel.AddRoomPostViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -119,4 +121,9 @@ fun AddRoomPostScreen(
             }
         }
     }
+}
+@Preview(showBackground = true)
+@Composable
+fun AddRoomPostScreenPreview() {
+    AddRoomPostScreen(rememberNavController())
 }
