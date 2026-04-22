@@ -89,6 +89,7 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
+        onClick = onItemClick,
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
