@@ -1,11 +1,7 @@
 package com.example.roommatch_pmdm.di
 
-import com.example.roommatch_pmdm.data.repositories.AuthRepository
-import com.example.roommatch_pmdm.data.repositories.RoomPostRepository
-import com.example.roommatch_pmdm.data.repositories.UserRepository
-import com.example.roommatch_pmdm.domain.usecase.AddRoomPostUseCase
-import com.example.roommatch_pmdm.domain.usecase.DeleteRoomPostUseCase
-import com.example.roommatch_pmdm.domain.usecase.ListRoomPostsUseCase
+import com.example.roommatch_pmdm.data.repositories.*
+import com.example.roommatch_pmdm.domain.usecase.*
 import com.example.roommatch_pmdm.presentation.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -21,6 +17,8 @@ val appModule = module {
     single { AuthRepository(get()) }
     single { RoomPostRepository(get()) }
     single { UserRepository(get()) }
+    single { MatchRepository(get()) }   // ← nuevo
+    single { ChatRepository(get()) }    // ← nuevo
 
     // Use cases
     factory { AddRoomPostUseCase(get()) }
@@ -29,11 +27,11 @@ val appModule = module {
 
     // ViewModels
     viewModel { LoginViewModel(get()) }
-    viewModel { RegisterViewModel(get(), get()) }          // ← +UserRepository
-    viewModel { MatchingViewModel() }
-    viewModel { ChatListViewModel() }
-    viewModel { ChatDetailViewModel() }
+    viewModel { RegisterViewModel(get(), get()) }
+    viewModel { MatchingViewModel(get(), get()) }        // ← actualizado
+    viewModel { ChatListViewModel(get(), get()) }        // ← actualizado
+    viewModel { ChatDetailViewModel(get(), get()) }      // ← actualizado
     viewModel { ProfileViewModel(get(), get()) }
     viewModel { AddRoomPostViewModel(get(), get()) }
-    viewModel { RoomPostListViewModel(get(), get(), get()) } // ← +AuthRepository
+    viewModel { RoomPostListViewModel(get(), get(), get()) }
 }

@@ -21,9 +21,10 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.domain.model.UserCard
 import com.example.roommatch_pmdm.presentation.viewmodel.MatchingViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun MatchingScreen(viewModel: MatchingViewModel = viewModel()) {
+fun MatchingScreen(viewModel: MatchingViewModel = koinViewModel()) {
     val userCards = viewModel.userCards.collectAsState()
     val currentIndex = viewModel.currentIndex.collectAsState()
     val showMatchPopup = viewModel.showMatchPopup.collectAsState()

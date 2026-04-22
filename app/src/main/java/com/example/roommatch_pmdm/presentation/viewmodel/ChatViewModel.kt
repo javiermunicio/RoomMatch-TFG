@@ -2,13 +2,21 @@ package com.example.roommatch_pmdm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.ChatRepository
+import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ChatListViewModel : ViewModel() {
+// ─── ChatListViewModel ───────────────────────────────────────────────────────
+
+class ChatListViewModel(
+    private val matchRepository: MatchRepository,
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     private val _chatUsers = MutableStateFlow<List<ChatUser>>(emptyList())
     val chatUsers: StateFlow<List<ChatUser>> = _chatUsers
@@ -21,40 +29,34 @@ class ChatListViewModel : ViewModel() {
     }
 
     private fun loadChats() {
+        val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // TODO: Cargar desde Firebase
-                _chatUsers.value = generateMockChats()
+                val matchedIds = matchRepository.getMatchedUserIds(currentUserId)
+                // Por ahora mostramos los usuarios con match sin el último mensaje
+                // (ChatRepository se usará en el detalle)
+                _chatUsers.value = matchedIds.map { userId ->
+                    ChatUser(
+                        id          = userId,
+                        username    = userId,   // se reemplaza abajo
+                        lastMessage = "Toca para chatear",
+                        isRead      = true
+                    )
+                }
             } finally {
                 _isLoading.value = false
             }
         }
     }
-
-    private fun generateMockChats(): List<ChatUser> {
-        return listOf(
-            ChatUser(
-                id = "1",
-                username = "nebulanomod",
-                profileImage = "",
-                lastMessage = "Has compartido una publicación...",
-                timestamp = System.currentTimeMillis() - 7200000,
-                isRead = true
-            ),
-            ChatUser(
-                id = "2",
-                username = "pepitowdwd",
-                profileImage = "",
-                lastMessage = "Ha compartido una publicación...",
-                timestamp = System.currentTimeMillis() - 25200000,
-                isRead = false
-            )
-        )
-    }
 }
 
-class ChatDetailViewModel : ViewModel() {
+// ─── ChatDetailViewModel ─────────────────────────────────────────────────────
+
+class ChatDetailViewModel(
+    private val chatRepository: ChatRepository,
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
@@ -65,52 +67,24 @@ class ChatDetailViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    fun onMessageInputChanged(newMessage: String) {
-        _messageInput.value = newMessage
-    }
+    fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
-    fun sendMessage(recipientId: String) {
+    fun loadMessages(otherUserId: String) {
+        val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
-            if (_messageInput.value.isNotEmpty()) {
-                val newMessage = ChatMessage(
-                    id = System.currentTimeMillis().toString(),
-                    senderId = "currentUserId",
-                    recipientId = recipientId,
-                    content = _messageInput.value,
-                    timestamp = System.currentTimeMillis(),
-                    isRead = false
-                )
-
-                // TODO: Guardar en Firebase
-                _messages.value = _messages.value + newMessage
-                _messageInput.value = ""
+            chatRepository.getMessages(currentUserId, otherUserId).collect { msgs ->
+                _messages.value = msgs
             }
         }
     }
 
-    fun loadMessages(userId: String) {
+    fun sendMessage(otherUserId: String) {
+        val currentUserId = authRepository.currentUser?.uid ?: return
+        val content = _messageInput.value.trim()
+        if (content.isEmpty()) return
         viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                // TODO: Cargar desde Firebase
-                _messages.value = generateMockMessages()
-            } finally {
-                _isLoading.value = false
-            }
+            chatRepository.sendMessage(currentUserId, otherUserId, content)
+            _messageInput.value = ""
         }
-    }
-
-    private fun generateMockMessages(): List<ChatMessage> {
-        return listOf(
-            ChatMessage(
-                id = "1",
-                senderId = "other",
-                recipientId = "self",
-                content = "¡Hola! ¿Cómo estás?",
-                timestamp = System.currentTimeMillis() - 3600000,
-                isRead = true
-            )
-        )
     }
 }
-

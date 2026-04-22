@@ -1,0 +1,102 @@
+package com.example.roommatch_pmdm.data.repositories
+
+import com.example.roommatch_pmdm.domain.model.Like
+import com.example.roommatch_pmdm.domain.model.Match
+import com.example.roommatch_pmdm.domain.model.User
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
+
+class MatchRepository(private val firestore: FirebaseFirestore) {
+
+    private val likesCollection  = firestore.collection("likes")
+    private val matchesCollection = firestore.collection("matches")
+    private val usersCollection  = firestore.collection("users")
+
+    // Guarda el like y devuelve true si hay match mutuo
+    suspend fun saveLikeAndCheckMatch(fromUserId: String, toUserId: String): Boolean {
+        // 1. Guardar el like
+        val likeId = "${fromUserId}_${toUserId}"
+        likesCollection.document(likeId).set(
+            Like(fromUserId = fromUserId, toUserId = toUserId, createdAt = System.currentTimeMillis())
+        ).await()
+
+        // 2. Comprobar si el otro ya dio like
+        val reverseId = "${toUserId}_${fromUserId}"
+        val reverseDoc = likesCollection.document(reverseId).get().await()
+
+        return if (reverseDoc.exists()) {
+            // 3. Crear match
+            val matchId = if (fromUserId < toUserId) "${fromUserId}_${toUserId}"
+            else "${toUserId}_${fromUserId}"
+            matchesCollection.document(matchId).set(
+                Match(
+                    id       = matchId,
+                    userId1  = fromUserId,
+                    userId2  = toUserId,
+                    matchedAt = System.currentTimeMillis()
+                )
+            ).await()
+            true
+        } else {
+            false
+        }
+    }
+
+    // Devuelve los IDs de usuarios con los que hay match
+    fun getMatches(currentUserId: String): Flow<List<String>> = callbackFlow {
+        val listener = matchesCollection
+            .whereIn("userId1", listOf(currentUserId))
+            .addSnapshotListener { snap1, _ ->
+                // No podemos hacer dos whereIn en el mismo listener fácilmente,
+                // así que filtramos en cliente
+                val ids = mutableListOf<String>()
+                snap1?.documents?.forEach { doc ->
+                    val m = doc.toObject(Match::class.java) ?: return@forEach
+                    if (m.userId1 == currentUserId) ids.add(m.userId2)
+                    else if (m.userId2 == currentUserId) ids.add(m.userId1)
+                }
+                trySend(ids)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    // Versión sin Flow para usarla puntualmente
+    suspend fun getMatchedUserIds(currentUserId: String): List<String> {
+        val result = mutableListOf<String>()
+
+        val snap1 = matchesCollection.whereEqualTo("userId1", currentUserId).get().await()
+        snap1.documents.forEach { doc ->
+            doc.toObject(Match::class.java)?.let { result.add(it.userId2) }
+        }
+
+        val snap2 = matchesCollection.whereEqualTo("userId2", currentUserId).get().await()
+        snap2.documents.forEach { doc ->
+            doc.toObject(Match::class.java)?.let { result.add(it.userId1) }
+        }
+
+        return result
+    }
+
+    // Obtiene usuarios que aún no han sido valorados por currentUserId
+    suspend fun getUsersToSwipe(currentUserId: String): List<User> {
+        // IDs a los que ya dio like
+        val likedSnap = likesCollection
+            .whereEqualTo("fromUserId", currentUserId).get().await()
+        val alreadyLiked = likedSnap.documents.map { it.toObject(Like::class.java)!!.toUserId }.toSet()
+
+        // Todos los usuarios excepto él mismo y los ya valorados
+        val usersSnap = usersCollection.get().await()
+        return usersSnap.documents.mapNotNull { doc ->
+            val user = doc.toObject(User::class.java) ?: return@mapNotNull null
+            if (user.id == currentUserId || user.id in alreadyLiked) null else user
+        }
+    }
+
+    suspend fun hasAlreadyLiked(fromUserId: String, toUserId: String): Boolean {
+        val likeId = "${fromUserId}_${toUserId}"
+        return likesCollection.document(likeId).get().await().exists()
+    }
+}

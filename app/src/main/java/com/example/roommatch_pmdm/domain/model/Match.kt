@@ -8,6 +8,11 @@ data class Match(
     val status: String = "active"
 )
 
+data class Like(
+    val fromUserId: String = "",
+    val toUserId: String = "",
+    val createdAt: Long = 0
+)
 data class UserCard(
     val id: String = "",
     val username: String = "",

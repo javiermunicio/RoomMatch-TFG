@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,13 +23,15 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.domain.model.ChatUser
+import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
 import com.example.roommatch_pmdm.presentation.viewmodel.ChatDetailViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ChatListScreen(
     navController: NavController,
-    viewModel: ChatListViewModel = viewModel()
+    viewModel: ChatListViewModel = koinViewModel()
 ) {
     val chatUsers = viewModel.chatUsers.collectAsState()
     val isLoading = viewModel.isLoading.collectAsState()
@@ -73,8 +76,7 @@ fun ChatListScreen(
             ) {
                 items(chatUsers.value) { chatUser ->
                     ChatUserItem(chatUser) {
-                        // navController.navigate(Screen.ChatDetail.createRoute(chatUser.id))
-                    }
+                        navController.navigate(Screen.ChatDetail.createRoute(chatUser.id))                    }
                 }
             }
         }
@@ -146,11 +148,15 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
 @Composable
 fun ChatDetailScreen(
     chatUserId: String,
-    viewModel: ChatDetailViewModel = viewModel()
+    viewModel: ChatDetailViewModel = koinViewModel()   // ← koinViewModel en lugar de viewModel()
 ) {
-    val messages = viewModel.messages.collectAsState()
+    val messages     = viewModel.messages.collectAsState()
     val messageInput = viewModel.messageInput.collectAsState()
 
+    // Carga mensajes al entrar en la pantalla
+    LaunchedEffect(chatUserId) {
+        viewModel.loadMessages(chatUserId)
+    }
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier

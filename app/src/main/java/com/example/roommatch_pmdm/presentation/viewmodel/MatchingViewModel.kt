@@ -2,12 +2,17 @@ package com.example.roommatch_pmdm.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.UserCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class MatchingViewModel : ViewModel() {
+class MatchingViewModel(
+    private val matchRepository: MatchRepository,
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     private val _userCards = MutableStateFlow<List<UserCard>>(emptyList())
     val userCards: StateFlow<List<UserCard>> = _userCards
@@ -29,11 +34,23 @@ class MatchingViewModel : ViewModel() {
     }
 
     private fun loadUserCards() {
+        val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // TODO: Cargar desde Firebase
-                _userCards.value = generateMockUsers()
+                val users = matchRepository.getUsersToSwipe(currentUserId)
+                _userCards.value = users.map { user ->
+                    UserCard(
+                        id           = user.id,
+                        username     = user.username,
+                        profileImage = user.profileImage,
+                        age          = user.age,
+                        location     = user.location,
+                        bio          = user.bio,
+                        habits       = user.habits,
+                        preferences  = user.preferences
+                    )
+                }
             } finally {
                 _isLoading.value = false
             }
@@ -41,10 +58,14 @@ class MatchingViewModel : ViewModel() {
     }
 
     fun onLike() {
+        val currentUserId = authRepository.currentUser?.uid ?: return
+        val currentCard   = _userCards.value.getOrNull(_currentIndex.value) ?: return
+
         viewModelScope.launch {
-            val currentCard = _userCards.value.getOrNull(_currentIndex.value)
-            if (currentCard != null) {
-                checkMatch(currentCard)
+            val isMatch = matchRepository.saveLikeAndCheckMatch(currentUserId, currentCard.id)
+            if (isMatch) {
+                _matchedUser.value    = currentCard
+                _showMatchPopup.value = true
             }
             moveToNextCard()
         }
@@ -60,41 +81,7 @@ class MatchingViewModel : ViewModel() {
         }
     }
 
-    private fun checkMatch(card: UserCard) {
-        // TODO: Verificar si es un match mutuo en Firebase
-        // Simular match aleatorio
-        if (Math.random() > 0.5) {
-            _matchedUser.value = card
-            _showMatchPopup.value = true
-        }
-    }
-
     fun dismissMatchPopup() {
         _showMatchPopup.value = false
-    }
-
-    private fun generateMockUsers(): List<UserCard> {
-        return listOf(
-            UserCard(
-                id = "1",
-                username = "usuario1",
-                profileImage = "",
-                age = 25,
-                location = "Madrid",
-                bio = "Me encanta viajar y conocer gente nueva",
-                habits = listOf("Responsable", "Limpia"),
-                preferences = listOf("Tranquilidad", "Luz natural")
-            ),
-            UserCard(
-                id = "2",
-                username = "usuario2",
-                profileImage = "",
-                age = 24,
-                location = "Barcelona",
-                bio = "Estudiante de ingeniería",
-                habits = listOf("Empática", "Organizada"),
-                preferences = listOf("Zona céntrica", "Bien comunicada")
-            )
-        )
     }
 }
