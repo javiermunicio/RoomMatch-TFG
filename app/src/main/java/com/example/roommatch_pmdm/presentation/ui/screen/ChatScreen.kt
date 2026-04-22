@@ -4,13 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,24 +19,33 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.ChatUser
 import com.example.roommatch_pmdm.presentation.navigation.Screen
-import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
 import com.example.roommatch_pmdm.presentation.viewmodel.ChatDetailViewModel
+import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
+// ── Colores de burbuja ────────────────────────────────────────────────────────
+private val BubbleMe    = Color(0xFF1E88E5)
+private val BubbleOther = Color(0xFFEEEEEE)
+private val TextMe      = Color.White
+private val TextOther   = Color(0xFF212121)
+
+// ── ChatListScreen ────────────────────────────────────────────────────────────
 @Composable
 fun ChatListScreen(
     navController: NavController,
     viewModel: ChatListViewModel = koinViewModel()
 ) {
-    val chatUsers = viewModel.chatUsers.collectAsState()
-    val isLoading = viewModel.isLoading.collectAsState()
+    val chatUsers by viewModel.chatUsers.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -43,31 +53,25 @@ fun ChatListScreen(
             .background(Color.White)
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             shadowElevation = 4.dp
         ) {
             Text(
-                "RoomMatch",
+                "Chats",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1E88E5),
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             )
         }
 
-        Text(
-            "Chats",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E88E5),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
-        if (isLoading.value) {
+        if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+        } else if (chatUsers.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Aún no tienes chats. ¡Haz match con alguien!", color = Color.Gray)
             }
         } else {
             LazyColumn(
@@ -75,9 +79,10 @@ fun ChatListScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(chatUsers.value) { chatUser ->
+                items(chatUsers) { chatUser ->
                     ChatUserItem(chatUser) {
-                        navController.navigate(Screen.ChatDetail.createRoute(chatUser.id))                    }
+                        navController.navigate(Screen.ChatDetail.createRoute(chatUser.id))
+                    }
                 }
             }
         }
@@ -127,94 +132,176 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
                 )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    "2h",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+            if (!chatUser.isRead) {
+                Surface(
+                    modifier = Modifier.size(10.dp),
+                    color = Color.Red,
+                    shape = CircleShape
+                ) {}
+            } else {
+                Text("✔", color = Color(0xFF1E88E5), fontSize = 12.sp)
+            }
+        }
+    }
+}
+
+// ── ChatDetailScreen ──────────────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatDetailScreen(
+    chatUserId: String,
+    navController: NavController? = null,
+    viewModel: ChatDetailViewModel = koinViewModel()
+) {
+    val messages     by viewModel.messages.collectAsState()
+    val messageInput by viewModel.messageInput.collectAsState()
+    // Expuesto como StateFlow para que Compose recomponga en cuanto esté disponible
+    val currentUid   by viewModel.currentUserIdFlow.collectAsState()
+    val listState    = rememberLazyListState()
+
+    LaunchedEffect(chatUserId) {
+        viewModel.loadMessages(chatUserId)
+    }
+
+    // Auto-scroll al último mensaje cuando llegue uno nuevo
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.lastIndex)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Chat", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    if (navController != null) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver"
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor    = Color.White,
+                    titleContentColor = Color(0xFF1E88E5)
                 )
-                if (!chatUser.isRead) {
-                    Surface(
-                        modifier = Modifier.size(8.dp),
-                        color = Color.Red,
-                        shape = CircleShape
-                    ) {}
-                } else {
-                    Text("✔", color = Color(0xFF1E88E5))
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            LazyColumn(
+                state    = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(Color(0xFFF5F5F5))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(messages, key = { it.id }) { message ->
+                    MessageBubble(
+                        message       = message,
+                        currentUserId = currentUid
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value         = messageInput,
+                    onValueChange = { viewModel.onMessageInputChanged(it) },
+                    placeholder   = { Text("Escribe un mensaje...") },
+                    modifier      = Modifier.weight(1f),
+                    shape         = MaterialTheme.shapes.large,
+                    maxLines      = 4
+                )
+                IconButton(
+                    onClick  = { viewModel.sendMessage(chatUserId) },
+                    enabled  = messageInput.isNotBlank()
+                ) {
+                    Icon(
+                        imageVector        = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Enviar",
+                        tint               = if (messageInput.isNotBlank()) BubbleMe else Color.Gray
+                    )
                 }
             }
         }
     }
 }
 
+// ── Burbuja ───────────────────────────────────────────────────────────────────
 @Composable
-fun ChatDetailScreen(
-    chatUserId: String,
-    viewModel: ChatDetailViewModel = koinViewModel()
-) {
-    val messages     = viewModel.messages.collectAsState()
-    val messageInput = viewModel.messageInput.collectAsState()
-    val currentUid   = viewModel.currentUserId
-    // Carga mensajes al entrar en la pantalla
-    LaunchedEffect(chatUserId) {
-        viewModel.loadMessages(chatUserId)
+fun MessageBubble(message: ChatMessage, currentUserId: String) {
+    val isMine = currentUserId.isNotEmpty() && message.senderId == currentUserId
+
+    val timeText = remember(message.timestamp) {
+        if (message.timestamp > 0)
+            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
+        else ""
     }
-    Column(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(messages.value) { message ->
-                MessageBubble(message, currentUid)            }
-        }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+    // fillMaxWidth + horizontalArrangement garantiza el lado correcto
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = if (isMine) 56.dp else 0.dp,
+                end   = if (isMine) 0.dp  else 56.dp
+            ),
+        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
+    ) {
+        Column(
+            horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
         ) {
-            OutlinedTextField(
-                value = messageInput.value,
-                onValueChange = { viewModel.onMessageInputChanged(it) },
-                placeholder = { Text("Escribe un mensaje...") },
-                modifier = Modifier.weight(1f),
-                shape = MaterialTheme.shapes.large
-            )
+            Surface(
+                color = if (isMine) BubbleMe else BubbleOther,
+                shape = RoundedCornerShape(
+                    topStart    = 16.dp,
+                    topEnd      = 16.dp,
+                    bottomStart = if (isMine) 16.dp else 4.dp,
+                    bottomEnd   = if (isMine) 4.dp  else 16.dp
+                ),
+                shadowElevation = 1.dp
+            ) {
+                Text(
+                    text     = message.content,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    color    = if (isMine) TextMe else TextOther,
+                    fontSize = 15.sp
+                )
+            }
 
-            IconButton(onClick = { viewModel.sendMessage(chatUserId) }) {
-                Icon(Icons.Filled.Send, contentDescription = null)
+            if (timeText.isNotEmpty()) {
+                Text(
+                    text     = timeText,
+                    fontSize = 10.sp,
+                    color    = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
             }
         }
     }
 }
 
-@Composable
-fun MessageBubble(message: ChatMessage, currentUserId: String?) {
-    val isMine = message.senderId == currentUserId
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
-    ) {
-        Surface(
-            modifier = Modifier.widthIn(max = 250.dp),
-            color    = if (isMine) Color(0xFF1E88E5) else Color(0xFFEEEEEE),
-            shape    = MaterialTheme.shapes.large
-        ) {
-            Text(
-                message.content,
-                modifier = Modifier.padding(12.dp),
-                color    = if (isMine) Color.White else Color.Black
-            )
-        }
-    }
-}
 @Preview(showBackground = true)
 @Composable
 fun ChatScreenPreview() {
-   ChatListScreen(rememberNavController())
+    ChatListScreen(rememberNavController())
 }

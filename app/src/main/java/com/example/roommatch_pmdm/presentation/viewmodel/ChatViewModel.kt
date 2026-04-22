@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 
 class ChatListViewModel(
     private val matchRepository: MatchRepository,
-    private val authRepository: AuthRepository,
-    private val chatRepository: ChatRepository
+    private val authRepository:  AuthRepository,
+    private val chatRepository:  ChatRepository
 ) : ViewModel() {
 
     private val _chatUsers = MutableStateFlow<List<ChatUser>>(emptyList())
@@ -25,9 +25,7 @@ class ChatListViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    init {
-        loadChats()
-    }
+    init { loadChats() }
 
     private fun loadChats() {
         val currentUserId = authRepository.currentUser?.uid ?: return
@@ -35,9 +33,8 @@ class ChatListViewModel(
             _isLoading.value = true
             try {
                 val matchedIds = matchRepository.getMatchedUserIds(currentUserId)
-
-                val chatUserList = matchedIds.mapNotNull { userId ->
-                    val user = chatRepository.getUserData(userId)
+                _chatUsers.value = matchedIds.mapNotNull { userId ->
+                    val user    = chatRepository.getUserData(userId)
                     val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
                     ChatUser(
                         id           = userId,
@@ -48,8 +45,6 @@ class ChatListViewModel(
                         isRead       = lastMsg?.isRead ?: true
                     )
                 }
-
-                _chatUsers.value = chatUserList
             } finally {
                 _isLoading.value = false
             }
@@ -66,30 +61,45 @@ class ChatDetailViewModel(
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
-    val currentUserId: String? = authRepository.currentUser?.uid
+
     private val _messageInput = MutableStateFlow("")
     val messageInput: StateFlow<String> = _messageInput
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    /**
+     * UID del usuario autenticado expuesto como StateFlow.
+     * Al ser un StateFlow, Compose se recompone en cuanto tiene valor,
+     * lo que garantiza que MessageBubble sepa qué lado pintar cada burbuja.
+     */
+    private val _currentUserIdFlow = MutableStateFlow(
+        authRepository.currentUser?.uid ?: ""
+    )
+    val currentUserIdFlow: StateFlow<String> = _currentUserIdFlow
+
+    // Propiedad de compatibilidad (por si se usa en otro sitio)
+    val currentUserId: String? get() = authRepository.currentUser?.uid
+
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
-        val currentUserId = authRepository.currentUser?.uid ?: return
+        val uid = authRepository.currentUser?.uid ?: return
+        // Actualizamos el flow por si acaso no estaba listo en el init
+        _currentUserIdFlow.value = uid
         viewModelScope.launch {
-            chatRepository.getMessages(currentUserId, otherUserId).collect { msgs ->
+            chatRepository.getMessages(uid, otherUserId).collect { msgs ->
                 _messages.value = msgs
             }
         }
     }
 
     fun sendMessage(otherUserId: String) {
-        val currentUserId = authRepository.currentUser?.uid ?: return
+        val uid     = authRepository.currentUser?.uid ?: return
         val content = _messageInput.value.trim()
         if (content.isEmpty()) return
         viewModelScope.launch {
-            chatRepository.sendMessage(currentUserId, otherUserId, content)
+            chatRepository.sendMessage(uid, otherUserId, content)
             _messageInput.value = ""
         }
     }
