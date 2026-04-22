@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.ChatUser
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
@@ -149,11 +150,11 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
 @Composable
 fun ChatDetailScreen(
     chatUserId: String,
-    viewModel: ChatDetailViewModel = koinViewModel()   // ← koinViewModel en lugar de viewModel()
+    viewModel: ChatDetailViewModel = koinViewModel()
 ) {
     val messages     = viewModel.messages.collectAsState()
     val messageInput = viewModel.messageInput.collectAsState()
-
+    val currentUid   = viewModel.currentUserId
     // Carga mensajes al entrar en la pantalla
     LaunchedEffect(chatUserId) {
         viewModel.loadMessages(chatUserId)
@@ -167,8 +168,7 @@ fun ChatDetailScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(messages.value) { message ->
-                MessageBubble(message)
-            }
+                MessageBubble(message, currentUid)            }
         }
 
         Row(
@@ -194,20 +194,21 @@ fun ChatDetailScreen(
 }
 
 @Composable
-fun MessageBubble(message: com.example.roommatch_pmdm.domain.model.ChatMessage) {
+fun MessageBubble(message: ChatMessage, currentUserId: String?) {
+    val isMine = message.senderId == currentUserId
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.senderId == "currentUser") Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
     ) {
         Surface(
             modifier = Modifier.widthIn(max = 250.dp),
-            color = if (message.senderId == "currentUser") Color(0xFF1E88E5) else Color(0xFFEEEEEE),
-            shape = MaterialTheme.shapes.large
+            color    = if (isMine) Color(0xFF1E88E5) else Color(0xFFEEEEEE),
+            shape    = MaterialTheme.shapes.large
         ) {
             Text(
                 message.content,
                 modifier = Modifier.padding(12.dp),
-                color = if (message.senderId == "currentUser") Color.White else Color.Black
+                color    = if (isMine) Color.White else Color.Black
             )
         }
     }

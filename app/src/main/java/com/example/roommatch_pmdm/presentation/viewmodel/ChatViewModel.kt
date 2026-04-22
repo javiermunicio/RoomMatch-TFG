@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 
 class ChatListViewModel(
     private val matchRepository: MatchRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val chatRepository: ChatRepository
 ) : ViewModel() {
 
     private val _chatUsers = MutableStateFlow<List<ChatUser>>(emptyList())
@@ -34,16 +35,21 @@ class ChatListViewModel(
             _isLoading.value = true
             try {
                 val matchedIds = matchRepository.getMatchedUserIds(currentUserId)
-                // Por ahora mostramos los usuarios con match sin el último mensaje
-                // (ChatRepository se usará en el detalle)
-                _chatUsers.value = matchedIds.map { userId ->
+
+                val chatUserList = matchedIds.mapNotNull { userId ->
+                    val user = chatRepository.getUserData(userId)
+                    val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
                     ChatUser(
-                        id          = userId,
-                        username    = userId,   // se reemplaza abajo
-                        lastMessage = "Toca para chatear",
-                        isRead      = true
+                        id           = userId,
+                        username     = user?.username?.ifEmpty { user.email } ?: userId,
+                        profileImage = user?.profileImage ?: "",
+                        lastMessage  = lastMsg?.content ?: "Toca para chatear",
+                        timestamp    = lastMsg?.timestamp ?: 0L,
+                        isRead       = lastMsg?.isRead ?: true
                     )
                 }
+
+                _chatUsers.value = chatUserList
             } finally {
                 _isLoading.value = false
             }
@@ -60,7 +66,7 @@ class ChatDetailViewModel(
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
-
+    val currentUserId: String? = authRepository.currentUser?.uid
     private val _messageInput = MutableStateFlow("")
     val messageInput: StateFlow<String> = _messageInput
 

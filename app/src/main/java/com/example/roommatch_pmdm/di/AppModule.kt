@@ -28,9 +28,9 @@ val appModule = module {
     // ViewModels
     viewModel { LoginViewModel(get()) }
     viewModel { RegisterViewModel(get(), get()) }
-    viewModel { MatchingViewModel(get(), get()) }        // ← actualizado
-    viewModel { ChatListViewModel(get(), get()) }        // ← actualizado
-    viewModel { ChatDetailViewModel(get(), get()) }      // ← actualizado
+    viewModel { MatchingViewModel(get(), get()) }
+    viewModel { ChatListViewModel(get(), get(), get()) }
+    viewModel { ChatDetailViewModel(get(), get()) }
     viewModel { ProfileViewModel(get(), get()) }
     viewModel { AddRoomPostViewModel(get(), get()) }
     viewModel { RoomPostListViewModel(get(), get(), get()) }
