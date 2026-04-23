@@ -40,7 +40,7 @@ fun RegisterScreen(
     val errorMessage = viewModel.errorMessage.collectAsState()
 
     if (registerSuccess.value) {
-        navController.navigate(Screen.Home.route) {
+        navController.navigate(Screen.Onboarding.route) {
             popUpTo(Screen.Register.route) { inclusive = true }
         }
     }

@@ -29,6 +29,9 @@ fun NavGraph(
         composable(Screen.ChatList.route) {
             ChatListScreen(navController = navController)
         }
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(navController = navController)
+        }
         composable(Screen.ChatDetail.route) { backStackEntry ->
             val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
             ChatDetailScreen(chatUserId = chatUserId, navController = navController)

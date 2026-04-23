@@ -37,4 +37,5 @@ val appModule = module {
     viewModel { ProfileViewModel(get(), get(), get()) }
     viewModel { AddRoomPostViewModel(get(), get()) }
     viewModel { RoomPostListViewModel(get(), get(), get()) }
+    viewModel { OnboardingViewModel(get(), get(), get()) }
 }
