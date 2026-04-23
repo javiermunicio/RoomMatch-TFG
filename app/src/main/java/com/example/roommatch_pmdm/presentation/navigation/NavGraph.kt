@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.presentation.ui.screen.*
 
+// NavGraph.kt — versión corregida
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -16,44 +17,24 @@ fun NavGraph(
         navController = navController,
         startDestination = startDestination
     ) {
-        // Pantalla de Login
         composable(Screen.Login.route) {
             LoginScreen(navController = navController)
         }
-
-        // Pantalla de Registro
         composable(Screen.Register.route) {
             RegisterScreen(navController = navController)
         }
-
-        // Pantalla Home (Hub principal con Bottom Navigation)
         composable(Screen.Home.route) {
             HomeScreen(navController = navController)
         }
-
-        // Pantalla de Matching
-        composable(Screen.Matching.route) {
-            MatchingScreen()
-        }
-
-        // Pantalla de Lista de Chats
         composable(Screen.ChatList.route) {
             ChatListScreen(navController = navController)
         }
-
-        // Pantalla de Chat Detallado
         composable(Screen.ChatDetail.route) { backStackEntry ->
             val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
-            ChatDetailScreen(chatUserId = chatUserId)
-        }
-        composable(Screen.AddRooms.route) {
-            RoomPostListScreen(navController = navController)
+            ChatDetailScreen(chatUserId = chatUserId, navController = navController)
         }
         composable(Screen.Profile.route) {
             ProfileScreen(navController = navController)
-        }
-        composable(Screen.AddRooms.route) {
-            AddRoomPostScreen(navController = navController)
         }
     }
 }

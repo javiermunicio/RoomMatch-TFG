@@ -1,8 +1,10 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.StorageRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,11 +13,17 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val storageRepository: StorageRepository
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
     val user: StateFlow<User?> = _user
+    private val _profileImageUrl = MutableStateFlow("")
+    val profileImageUrl: StateFlow<String> = _profileImageUrl
+
+    private val _isUploadingImage = MutableStateFlow(false)
+    val isUploadingImage: StateFlow<Boolean> = _isUploadingImage
 
     private val _isEditing = MutableStateFlow(false)
     val isEditing: StateFlow<Boolean> = _isEditing
@@ -74,6 +82,7 @@ class ProfileViewModel(
 
     private fun populateFields(user: User) {
         _username.value = user.username
+        _profileImageUrl.value = user.profileImage
         _age.value = if (user.age > 0) user.age.toString() else ""
         _location.value = user.location
         _bio.value = user.bio
@@ -125,6 +134,25 @@ class ProfileViewModel(
                 }
             )
             _isLoading.value = false
+        }
+    }
+    fun uploadProfileImage(uri: Uri) {
+        val userId = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            _isUploadingImage.value = true
+            storageRepository.uploadProfileImage(uri).fold(  // ← sin userId
+                onSuccess = { url ->
+                    _profileImageUrl.value = url
+                    val updatedUser = (_user.value ?: User(id = userId))
+                        .copy(profileImage = url, updatedAt = System.currentTimeMillis())
+                    userRepository.saveUser(updatedUser)
+                    _user.value = updatedUser
+                },
+                onFailure = {
+                    _errorMessage.value = "Error al subir la imagen"
+                }
+            )
+            _isUploadingImage.value = false
         }
     }
 

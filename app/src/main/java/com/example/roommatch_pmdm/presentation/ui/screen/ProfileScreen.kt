@@ -28,6 +28,11 @@ import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.ProfileViewModel
 import org.koin.androidx.compose.koinViewModel
+import androidx.compose.foundation.clickable
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import androidx.compose.material.icons.filled.CameraAlt
 
 private val RoomBlue  = Color(0xFF4A90D9)
 private val RoomRed   = Color(0xFFF26B6B)
@@ -51,6 +56,14 @@ fun ProfileScreen(
     val bio          by viewModel.bio.collectAsState()
     val budget       by viewModel.budget.collectAsState()
     val habits       by viewModel.selectedHabits.collectAsState()
+    val profileImageUrl by viewModel.profileImageUrl.collectAsState()
+    val isUploadingImage by viewModel.isUploadingImage.collectAsState()
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.uploadProfileImage(it) }
+    }
 
     var newTrait         by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -118,19 +131,44 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Box(
-                    modifier        = Modifier
+                    modifier = Modifier
                         .size(120.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFDDDDDD))
-                        .border(3.dp, RoomBlue, CircleShape),
+                        .border(3.dp, RoomBlue, CircleShape)
+                        .clickable { if (isEditing) imagePickerLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model           = "https://via.placeholder.com/120",
+                        model = profileImageUrl.ifEmpty { "https://via.placeholder.com/120" },
                         contentDescription = "Foto de perfil",
-                        contentScale    = ContentScale.Crop,
-                        modifier        = Modifier.fillMaxSize()
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
+                    // Overlay de cámara cuando está en modo edición
+                    if (isEditing) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.35f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isUploadingImage) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.CameraAlt,
+                                    contentDescription = "Cambiar foto",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
