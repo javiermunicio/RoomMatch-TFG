@@ -32,6 +32,7 @@ class ChatListViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                // Recarga cada vez que se abre la pantalla — simple y fiable
                 val matchedIds = matchRepository.getMatchedUserIds(currentUserId)
                 _chatUsers.value = matchedIds.mapNotNull { userId ->
                     val user    = chatRepository.getUserData(userId)
@@ -49,6 +50,9 @@ class ChatListViewModel(
                 _isLoading.value = false
             }
         }
+    }
+    fun refresh() {
+        loadChats()
     }
 }
 

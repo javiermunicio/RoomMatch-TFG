@@ -46,6 +46,15 @@ fun ChatListScreen(
 ) {
     val chatUsers by viewModel.chatUsers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }}
 
     Column(
         modifier = Modifier

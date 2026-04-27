@@ -47,20 +47,40 @@ class MatchRepository(private val firestore: FirebaseFirestore) {
 
     // Devuelve los IDs de usuarios con los que hay match
     fun getMatches(currentUserId: String): Flow<List<String>> = callbackFlow {
-        val listener = matchesCollection
-            .whereIn("userId1", listOf(currentUserId))
-            .addSnapshotListener { snap1, _ ->
-                // No podemos hacer dos whereIn en el mismo listener fácilmente,
-                // así que filtramos en cliente
-                val ids = mutableListOf<String>()
-                snap1?.documents?.forEach { doc ->
-                    val m = doc.toObject(Match::class.java) ?: return@forEach
-                    if (m.userId1 == currentUserId) ids.add(m.userId2)
-                    else if (m.userId2 == currentUserId) ids.add(m.userId1)
+        val result = mutableSetOf<String>()
+
+        // Listener para matches donde el usuario es userId1
+        val listener1 = matchesCollection
+            .whereEqualTo("userId1", currentUserId)
+            .addSnapshotListener { snap, error ->
+                if (error != null) { close(error); return@addSnapshotListener }
+                result.removeAll { id ->
+                    // Limpiamos los que venían de este listener antes de reañadir
+                    snap?.documents?.none { doc ->
+                        doc.toObject(Match::class.java)?.userId2 == id
+                    } == true
                 }
-                trySend(ids)
+                snap?.documents?.forEach { doc ->
+                    doc.toObject(Match::class.java)?.let { result.add(it.userId2) }
+                }
+                trySend(result.toList())
             }
-        awaitClose { listener.remove() }
+
+        // Listener para matches donde el usuario es userId2
+        val listener2 = matchesCollection
+            .whereEqualTo("userId2", currentUserId)
+            .addSnapshotListener { snap, error ->
+                if (error != null) { close(error); return@addSnapshotListener }
+                snap?.documents?.forEach { doc ->
+                    doc.toObject(Match::class.java)?.let { result.add(it.userId1) }
+                }
+                trySend(result.toList())
+            }
+
+        awaitClose {
+            listener1.remove()
+            listener2.remove()
+        }
     }
 
     // Versión sin Flow para usarla puntualmente
