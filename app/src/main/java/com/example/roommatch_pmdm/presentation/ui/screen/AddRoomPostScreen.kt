@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -19,6 +20,7 @@ fun AddRoomPostScreen(
     navController: NavController,
     viewModel: AddRoomPostViewModel = koinViewModel()
 ) {
+    val validationError by viewModel.validationError.collectAsState()
     val roomPost by viewModel.roomPost.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -107,9 +109,18 @@ fun AddRoomPostScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
+
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
+                validationError?.let {
+                    Text(
+                        text = it,
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
                 Button(onClick = { viewModel.reset() }) { Text("Limpiar") }
                 Button(
                     onClick = { showDialog = true },

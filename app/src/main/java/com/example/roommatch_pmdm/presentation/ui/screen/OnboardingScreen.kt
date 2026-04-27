@@ -32,6 +32,7 @@ private val RoomBlue = Color(0xFF4A90D9)
 private val ChipSelected = Color(0xFF4A90D9)
 private val ChipUnselected = Color(0xFFEEEEEE)
 
+
 @Composable
 fun OnboardingScreen(
     navController: NavController,
@@ -86,10 +87,14 @@ fun OnboardingScreen(
             2 -> StepTwo(viewModel)
             3 -> StepThree(viewModel)
         }
-
-        errorMessage?.let {
-            Text(it, color = Color.Red, style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp))
+        val stepError by viewModel.stepError.collectAsState()
+        (stepError ?: errorMessage)?.let {
+            Text(
+                it,
+                color    = Color.Red,
+                style    = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

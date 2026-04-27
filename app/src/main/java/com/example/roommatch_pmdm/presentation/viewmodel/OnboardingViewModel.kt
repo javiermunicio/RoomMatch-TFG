@@ -18,6 +18,7 @@ class OnboardingViewModel(
 ) : ViewModel() {
 
     val step = MutableStateFlow(1) // 1, 2 o 3
+    val stepError = MutableStateFlow<String?>(null)
 
     val username        = MutableStateFlow("")
     val age             = MutableStateFlow("")
@@ -55,10 +56,40 @@ class OnboardingViewModel(
         }
     }
 
-    fun nextStep() { if (step.value < 3) step.value++ }
-    fun prevStep() { if (step.value > 1) step.value-- }
+    fun nextStep() {
+        when (step.value) {
+            1 -> {
+                if (username.value.isBlank()) {
+                    stepError.value = "El nombre es obligatorio"
+                    return
+                }
+            }
+            2 -> {
+                if (age.value.isBlank()) {
+                    stepError.value = "La edad es obligatoria"
+                    return
+                }
+                val ageInt = age.value.toIntOrNull()
+                if (ageInt == null || ageInt < 18 || ageInt > 99) {
+                    stepError.value = "La edad debe estar entre 18 y 99 años"
+                    return
+                }
+                if (city.value.isBlank()) {
+                    stepError.value = "La ciudad es obligatoria"
+                    return
+                }
+            }
+        }
+        stepError.value = null
+        if (step.value < 3) step.value++
+    }    fun prevStep() { if (step.value > 1) step.value-- }
 
     fun finish() {
+        if (selectedHabits.value.isEmpty()) {
+            stepError.value = "Selecciona al menos un rasgo"
+            return
+        }
+        stepError.value = null
         val userId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             isLoading.value = true
