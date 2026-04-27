@@ -23,8 +23,8 @@ class RoomPostListViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // UID del usuario autenticado (null si no hay sesión)
-    val currentUserId: StateFlow<String?> = MutableStateFlow(authRepository.currentUser?.uid)
-
+    private val _currentUserId = MutableStateFlow(authRepository.currentUser?.uid)
+    val currentUserId: StateFlow<String?> = _currentUserId
     fun delete(id: String) {
         viewModelScope.launch { deleteRoomPostUseCase(id) }
     }

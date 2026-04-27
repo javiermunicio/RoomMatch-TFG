@@ -76,9 +76,7 @@ class MatchingViewModel(
     }
 
     private fun moveToNextCard() {
-        if (_currentIndex.value < _userCards.value.size - 1) {
-            _currentIndex.value += 1
-        }
+        _currentIndex.value += 1
     }
 
     fun dismissMatchPopup() {

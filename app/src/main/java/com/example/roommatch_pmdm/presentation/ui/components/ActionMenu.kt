@@ -66,7 +66,7 @@ fun ActionMenu(title:String, navController: NavController) {
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Añadir Libro") },
+                    text = { Text("Publicar Habitación") },
                     onClick = {
                         expanded = false
                         navController.navigate(Screen.NewRoomPost.route) // ← antes era AddRooms

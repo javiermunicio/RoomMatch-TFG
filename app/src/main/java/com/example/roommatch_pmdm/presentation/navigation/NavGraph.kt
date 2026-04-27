@@ -39,5 +39,11 @@ fun NavGraph(
         composable(Screen.Profile.route) {
             ProfileScreen(navController = navController)
         }
+        composable(Screen.AddRooms.route) {
+            RoomPostListScreen(navController = navController)
+        }
+        composable(Screen.NewRoomPost.route) {
+            AddRoomPostScreen(navController = navController)
+        }
     }
 }

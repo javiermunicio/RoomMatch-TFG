@@ -47,34 +47,29 @@ class MatchRepository(private val firestore: FirebaseFirestore) {
 
     // Devuelve los IDs de usuarios con los que hay match
     fun getMatches(currentUserId: String): Flow<List<String>> = callbackFlow {
-        val result = mutableSetOf<String>()
+        val fromUser1 = mutableSetOf<String>()
+        val fromUser2 = mutableSetOf<String>()
 
-        // Listener para matches donde el usuario es userId1
         val listener1 = matchesCollection
             .whereEqualTo("userId1", currentUserId)
             .addSnapshotListener { snap, error ->
                 if (error != null) { close(error); return@addSnapshotListener }
-                result.removeAll { id ->
-                    // Limpiamos los que venían de este listener antes de reañadir
-                    snap?.documents?.none { doc ->
-                        doc.toObject(Match::class.java)?.userId2 == id
-                    } == true
-                }
+                fromUser1.clear()
                 snap?.documents?.forEach { doc ->
-                    doc.toObject(Match::class.java)?.let { result.add(it.userId2) }
+                    doc.toObject(Match::class.java)?.let { fromUser1.add(it.userId2) }
                 }
-                trySend(result.toList())
+                trySend((fromUser1 + fromUser2).toList())
             }
 
-        // Listener para matches donde el usuario es userId2
         val listener2 = matchesCollection
             .whereEqualTo("userId2", currentUserId)
             .addSnapshotListener { snap, error ->
                 if (error != null) { close(error); return@addSnapshotListener }
+                fromUser2.clear()
                 snap?.documents?.forEach { doc ->
-                    doc.toObject(Match::class.java)?.let { result.add(it.userId1) }
+                    doc.toObject(Match::class.java)?.let { fromUser2.add(it.userId1) }
                 }
-                trySend(result.toList())
+                trySend((fromUser1 + fromUser2).toList())
             }
 
         awaitClose {
