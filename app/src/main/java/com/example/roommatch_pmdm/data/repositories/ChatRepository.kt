@@ -67,4 +67,27 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             .get().await()
         return snap.documents.firstOrNull()?.toObject(ChatMessage::class.java)
     }
+
+
+    suspend fun markMessagesAsRead(currentUserId: String, otherUserId: String) {
+        try {
+            val convId = conversationId(currentUserId, otherUserId)
+            val msgsRef = messagesCollection.document(convId).collection("msgs")
+
+            // Usamos recipientId en lugar de whereNotEqualTo para evitar bloqueos de Firebase
+            val unreadQuery = msgsRef
+                .whereEqualTo("recipientId", currentUserId)
+                .whereEqualTo("isRead", false)
+                .get()
+                .await()
+
+            val batch = firestore.batch()
+            for (doc in unreadQuery.documents) {
+                batch.update(doc.reference, "isRead", true)
+            }
+            batch.commit().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

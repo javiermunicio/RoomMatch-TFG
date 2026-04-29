@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.domain.model.UserCard
+import com.example.roommatch_pmdm.presentation.ui.components.swipeableCard
 import com.example.roommatch_pmdm.presentation.viewmodel.MatchingViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -51,7 +52,14 @@ fun MatchingScreen(viewModel: MatchingViewModel = koinViewModel()) {
             CircularProgressIndicator()
         } else if (currentIndex.value < userCards.value.size) {
             val currentCard = userCards.value[currentIndex.value]
-            UserCardDisplay(currentCard)
+
+            // Le pasamos las funciones del ViewModel aquí:
+            UserCardDisplay(
+                userCard = currentCard,
+                onSwipeLeft = { viewModel.onPass() },
+                onSwipeRight = { viewModel.onLike() }
+            )
+
         } else {
             Text("No hay más usuarios disponibles")
         }
@@ -92,14 +100,24 @@ fun MatchingScreen(viewModel: MatchingViewModel = koinViewModel()) {
 }
 
 @Composable
-fun UserCardDisplay(userCard: UserCard) {
+fun UserCardDisplay(
+    userCard: UserCard,
+    onSwipeLeft: () -> Unit,
+    onSwipeRight: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(450.dp),
+            .height(450.dp)
+            // Añadimos el modificador aquí
+            .swipeableCard(
+                onSwipeLeft = onSwipeLeft,
+                onSwipeRight = onSwipeRight
+            ),
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
+        // ... (El resto de tu código para mostrar la imagen, nombre, etc. se queda igual)
         Column {
             AsyncImage(
                 model = userCard.profileImage.ifEmpty { "https://via.placeholder.com/400x300" },
