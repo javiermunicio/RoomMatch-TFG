@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -164,15 +166,16 @@ fun ChatDetailScreen(
 ) {
     val messages     by viewModel.messages.collectAsState()
     val messageInput by viewModel.messageInput.collectAsState()
-    // Expuesto como StateFlow para que Compose recomponga en cuanto esté disponible
     val currentUid   by viewModel.currentUserIdFlow.collectAsState()
     val listState    = rememberLazyListState()
 
+    // AQUÍ ESTÁ EL CAMBIO 1: Avisamos de que entramos al chat para leer
     LaunchedEffect(chatUserId) {
         viewModel.loadMessages(chatUserId)
+        // Llama a la función de tu ViewModel que actualiza Firebase
+        viewModel.markMessagesAsRead(chatUserId)
     }
 
-    // Auto-scroll al último mensaje cuando llegue uno nuevo
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.lastIndex)
@@ -266,7 +269,6 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
         else ""
     }
 
-    // fillMaxWidth + horizontalArrangement garantiza el lado correcto
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -298,12 +300,30 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
             }
 
             if (timeText.isNotEmpty()) {
-                Text(
-                    text     = timeText,
-                    fontSize = 10.sp,
-                    color    = Color.Gray,
+                // AQUÍ ESTÁ EL CAMBIO 2: Fila para agrupar la hora y los checks
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
+                ) {
+                    Text(
+                        text     = timeText,
+                        fontSize = 10.sp,
+                        color    = Color.Gray
+                    )
+
+                    // Si el mensaje es mío, muestro los checks
+                    if (isMine) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            // message.isRead debe existir en tu modelo ChatMessage
+                            imageVector = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Check,
+                            contentDescription = if (message.isRead) "Leído" else "Enviado",
+                            modifier = Modifier.size(14.dp),
+                            // Azul si lo ha leído, gris si solo está enviado
+                            tint = if (message.isRead) Color(0xFF1E88E5) else Color.Gray
+                        )
+                    }
+                }
             }
         }
     }
