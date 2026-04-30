@@ -10,6 +10,7 @@ import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 // ─── ChatListViewModel ───────────────────────────────────────────────────────
 
@@ -58,6 +59,8 @@ class ChatListViewModel(
 
 // ─── ChatDetailViewModel ─────────────────────────────────────────────────────
 
+// ─── ChatDetailViewModel ─────────────────────────────────────────────────────
+
 class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository
@@ -72,24 +75,17 @@ class ChatDetailViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    /**
-     * UID del usuario autenticado expuesto como StateFlow.
-     * Al ser un StateFlow, Compose se recompone en cuanto tiene valor,
-     * lo que garantiza que MessageBubble sepa qué lado pintar cada burbuja.
-     */
     private val _currentUserIdFlow = MutableStateFlow(
         authRepository.currentUser?.uid ?: ""
     )
     val currentUserIdFlow: StateFlow<String> = _currentUserIdFlow
 
-    // Propiedad de compatibilidad (por si se usa en otro sitio)
     val currentUserId: String? get() = authRepository.currentUser?.uid
 
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
-        // Actualizamos el flow por si acaso no estaba listo en el init
         _currentUserIdFlow.value = uid
         viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
@@ -105,6 +101,14 @@ class ChatDetailViewModel(
         viewModelScope.launch {
             chatRepository.sendMessage(uid, otherUserId, content)
             _messageInput.value = ""
+        }
+    }
+
+    fun markMessagesAsRead(otherUserId: String) {
+        val currentUid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            // Le pasamos el trabajo al repositorio
+            chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
     }
 }
