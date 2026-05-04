@@ -45,5 +45,9 @@ fun NavGraph(
         composable(Screen.NewRoomPost.route) {
             AddRoomPostScreen(navController = navController)
         }
+        composable(Screen.RoomPostDetail.route) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+            RoomPostDetailScreen(postId = postId, navController = navController)
+        }
     }
 }
