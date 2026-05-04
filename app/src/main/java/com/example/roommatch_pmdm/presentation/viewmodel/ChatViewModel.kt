@@ -27,26 +27,18 @@ class ChatListViewModel(
 
     init { loadChats() }
 
-    private fun loadChats() {
+    fun loadChats() {
         val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 1. Usuarios con match mutuo
                 val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
-
-                // 2. Usuarios con conversación activa (al menos 1 mensaje), sin importar el match
                 val activeIds = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
-
-                // 3. Unión de ambos conjuntos (sin duplicados)
                 val allUserIds = (matchedIds + activeIds).toList()
 
-                // 4. Construir la lista de ChatUser con el último mensaje de cada uno
                 _chatUsers.value = allUserIds.mapNotNull { userId ->
                     val user    = chatRepository.getUserData(userId)
                     val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
-
-                    // Si no hay ningún mensaje y el usuario solo está por match, mostrarlo igual
                     ChatUser(
                         id           = userId,
                         username     = user?.username?.ifEmpty { user.email } ?: userId,
@@ -55,16 +47,14 @@ class ChatListViewModel(
                         timestamp    = lastMsg?.timestamp ?: 0L,
                         isRead       = lastMsg?.isRead ?: true
                     )
-                }.sortedByDescending { it.timestamp } // más reciente primero
+                }.sortedByDescending { it.timestamp }
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun refresh() {
-        loadChats()
-    }
+    fun refresh() { loadChats() }
 }
 
 // ─── ChatDetailViewModel ─────────────────────────────────────────────────────
