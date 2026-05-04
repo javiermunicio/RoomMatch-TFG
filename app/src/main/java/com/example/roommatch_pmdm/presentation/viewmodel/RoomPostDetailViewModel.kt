@@ -1,5 +1,6 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
@@ -7,6 +8,7 @@ import com.example.roommatch_pmdm.data.repositories.InterestRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.Interest
 import com.example.roommatch_pmdm.domain.model.RoomPost
+import com.example.roommatch_pmdm.notifications.NotificationHelper
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +19,8 @@ class RoomPostDetailViewModel(
     private val interestRepository: InterestRepository,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val context: Context
 ) : ViewModel() {
 
     private val _post = MutableStateFlow<RoomPost?>(null)
@@ -46,19 +49,13 @@ class RoomPostDetailViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Cargar el post desde Firestore
                 val doc = firestore.collection("roomPosts").document(postId).get().await()
                 val roomPost = doc.toObject(RoomPost::class.java)?.copy(id = doc.id)
                 _post.value = roomPost
 
                 if (roomPost != null) {
-                    // Comprobar si el usuario actual es el dueño
                     _isOwner.value = roomPost.ownerId == currentUserId
-
-                    // Comprobar si ya mostró interés
                     _isInterested.value = interestRepository.hasInterest(currentUserId, postId)
-
-                    // Escuchar el contador de interesados en tiempo real
                     launch {
                         interestRepository.getInterestCountFlow(postId).collect { count ->
                             _interestCount.value = count
@@ -75,36 +72,41 @@ class RoomPostDetailViewModel(
 
     fun toggleInterest() {
         val currentUserId = authRepository.currentUser?.uid ?: return
-        val postId = _post.value?.id ?: return
-        val postOwnerId = _post.value?.ownerId ?: return
+        val postId        = _post.value?.id ?: return
+        val postOwnerId   = _post.value?.ownerId ?: return
+        val postTitle     = _post.value?.title ?: ""
 
         viewModelScope.launch {
             _isLoading.value = true
             if (_isInterested.value) {
-                // Retirar interés
                 interestRepository.removeInterest(currentUserId, postId).fold(
                     onSuccess = {
-                        _isInterested.value = false
+                        _isInterested.value  = false
                         _successMessage.value = "Has retirado tu interés"
                     },
                     onFailure = { _errorMessage.value = "Error al retirar el interés" }
                 )
             } else {
-                // Mostrar interés — obtenemos el username del usuario actual
                 val userResult = userRepository.getUser(currentUserId)
-                val username = userResult.getOrNull()?.username ?: "Usuario"
+                val username   = userResult.getOrNull()?.username ?: "Usuario"
 
                 val interest = Interest(
-                    postId = postId,
-                    postOwnerId = postOwnerId,
-                    interestedUserId = currentUserId,
+                    postId             = postId,
+                    postOwnerId        = postOwnerId,
+                    interestedUserId   = currentUserId,
                     interestedUsername = username,
-                    createdAt = System.currentTimeMillis()
+                    createdAt          = System.currentTimeMillis()
                 )
                 interestRepository.addInterest(interest).fold(
                     onSuccess = {
-                        _isInterested.value = true
+                        _isInterested.value   = true
                         _successMessage.value = "¡El dueño del piso ha sido notificado de tu interés!"
+
+                        NotificationHelper.showInterestNotification(
+                            context            = context,
+                            interestedUsername = username,
+                            postTitle          = postTitle
+                        )
                     },
                     onFailure = { _errorMessage.value = "Error al registrar el interés" }
                 )
@@ -114,7 +116,7 @@ class RoomPostDetailViewModel(
     }
 
     fun clearMessages() {
-        _errorMessage.value = null
+        _errorMessage.value   = null
         _successMessage.value = null
     }
 }
