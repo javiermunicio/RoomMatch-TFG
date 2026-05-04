@@ -15,13 +15,15 @@ val appModule = module {
     single { FirebaseFirestore.getInstance() }
     single { FirebaseAuth.getInstance() }
     single { FirebaseStorage.getInstance() }
+
     // Repositories
-    single { StorageRepository(androidContext())}
+    single { StorageRepository(androidContext()) }
     single { AuthRepository(get()) }
     single { RoomPostRepository(get()) }
     single { UserRepository(get()) }
-    single { MatchRepository(get()) }   // ← nuevo
-    single { ChatRepository(get()) }    // ← nuevo
+    single { MatchRepository(get()) }
+    single { ChatRepository(get()) }
+    single { InterestRepository(get()) }
 
     // Use cases
     factory { AddRoomPostUseCase(get()) }
@@ -38,4 +40,5 @@ val appModule = module {
     viewModel { AddRoomPostViewModel(get(), get()) }
     viewModel { RoomPostListViewModel(get(), get(), get()) }
     viewModel { OnboardingViewModel(get(), get(), get()) }
+    viewModel { RoomPostDetailViewModel(get(), get(), get(), get()) }
 }

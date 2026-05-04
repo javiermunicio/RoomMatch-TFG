@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,12 +54,13 @@ fun MatchingScreen(viewModel: MatchingViewModel = koinViewModel()) {
         } else if (currentIndex.value < userCards.value.size) {
             val currentCard = userCards.value[currentIndex.value]
 
-            // Le pasamos las funciones del ViewModel aquí:
-            UserCardDisplay(
-                userCard = currentCard,
-                onSwipeLeft = { viewModel.onPass() },
-                onSwipeRight = { viewModel.onLike() }
-            )
+            key(currentIndex.value) {
+                UserCardDisplay(
+                    userCard = currentCard,
+                    onSwipeLeft = { viewModel.onPass() },
+                    onSwipeRight = { viewModel.onLike() }
+                )
+            }
 
         } else {
             Text("No hay más usuarios disponibles")

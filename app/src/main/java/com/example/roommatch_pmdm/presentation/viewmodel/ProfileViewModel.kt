@@ -113,21 +113,22 @@ class ProfileViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             val updatedUser = (_user.value ?: User(id = userId)).copy(
-                id = userId,
-                username = _username.value,
-                age = _age.value.toIntOrNull() ?: 0,
-                location = _location.value,
-                bio = _bio.value,
-                budget = _budget.value.toIntOrNull() ?: 0,
-                habits = _selectedHabits.value,
-                preferences = _selectedPreferences.value,
-                updatedAt = System.currentTimeMillis()
+                id           = userId,
+                username     = _username.value,
+                age          = _age.value.toIntOrNull() ?: 0,
+                location     = _location.value,
+                bio          = _bio.value,
+                budget       = _budget.value.toIntOrNull() ?: 0,
+                habits       = _selectedHabits.value,
+                preferences  = _selectedPreferences.value,
+                profileImage = _profileImageUrl.value,
+                updatedAt    = System.currentTimeMillis()
             )
             userRepository.saveUser(updatedUser).fold(
                 onSuccess = {
-                    _user.value = updatedUser
+                    _user.value      = updatedUser
                     _isEditing.value = false
-                    _isSaved.value = true
+                    _isSaved.value   = true
                 },
                 onFailure = {
                     _errorMessage.value = "Error al guardar el perfil"
