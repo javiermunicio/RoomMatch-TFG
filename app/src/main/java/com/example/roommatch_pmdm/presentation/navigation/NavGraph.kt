@@ -4,10 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.presentation.ui.screen.*
 
-// NavGraph.kt — versión corregida
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -48,6 +46,18 @@ fun NavGraph(
         composable(Screen.RoomPostDetail.route) { backStackEntry ->
             val postId = backStackEntry.arguments?.getString("postId") ?: ""
             RoomPostDetailScreen(postId = postId, navController = navController)
+        }
+        composable(Screen.EditRoomPost.route) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+            EditRoomPostScreen(postId = postId, navController = navController)
+        }
+        composable(Screen.InterestedUsersList.route) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+            InterestedUsersListScreen(postId = postId, navController = navController)
+        }
+        composable(Screen.InterestedUserProfile.route) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            InterestedUsersProfileScreen(userId = userId, navController = navController)
         }
     }
 }

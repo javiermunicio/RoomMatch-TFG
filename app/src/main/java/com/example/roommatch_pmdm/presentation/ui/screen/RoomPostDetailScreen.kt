@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.domain.model.RoomPost
+import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.RoomPostDetailViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.net.URLEncoder
@@ -77,6 +78,20 @@ fun RoomPostDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+                // Botón editar en la barra superior (solo para el dueño)
+                actions = {
+                    if (isOwner && post != null) {
+                        IconButton(onClick = {
+                            navController.navigate(Screen.EditRoomPost.createRoute(postId))
+                        }) {
+                            Icon(
+                                Icons.Filled.Edit,
+                                contentDescription = "Editar anuncio",
+                                tint = RoomBlue
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor    = Color.White,
                     titleContentColor = RoomBlue
@@ -84,45 +99,79 @@ fun RoomPostDetailScreen(
             )
         },
         bottomBar = {
-            // Solo visible para quien no es el dueño
-            if (!isOwner && post != null) {
+            if (post != null) {
                 Surface(
-                    modifier       = Modifier.fillMaxWidth(),
+                    modifier        = Modifier.fillMaxWidth(),
                     shadowElevation = 8.dp,
-                    color          = Color.White
+                    color           = Color.White
                 ) {
-                    Button(
-                        onClick  = { viewModel.toggleInterest() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .height(52.dp),
-                        shape   = MaterialTheme.shapes.extraLarge,
-                        colors  = ButtonDefaults.buttonColors(
-                            containerColor = if (isInterested) Color(0xFFE0E0E0) else RoomBlue
-                        ),
-                        enabled = !isLoading
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier    = Modifier.size(22.dp),
-                                color       = Color.White,
-                                strokeWidth = 2.dp
+                    if (isOwner) {
+                        // ── Botón "Ver interesados" para el dueño ─────────────
+                        Button(
+                            onClick = {
+                                navController.navigate(
+                                    Screen.InterestedUsersList.createRoute(postId)
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .height(52.dp),
+                            shape  = MaterialTheme.shapes.extraLarge,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (interestCount > 0) RoomGreen else Color(0xFF90CAF9)
                             )
-                        } else {
+                        ) {
                             Icon(
-                                imageVector        = if (isInterested) Icons.Filled.CheckCircle else Icons.Filled.Favorite,
+                                Icons.Filled.People,
                                 contentDescription = null,
-                                modifier           = Modifier.size(20.dp),
-                                tint               = if (isInterested) RoomBlue else Color.White
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text       = if (isInterested) "Ya has mostrado interés" else "Me interesa este piso",
+                                text = if (interestCount > 0)
+                                    "Ver $interestCount interesado${if (interestCount != 1) "s" else ""}"
+                                else
+                                    "Sin interesados aún",
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize   = 15.sp,
-                                color      = if (isInterested) RoomBlue else Color.White
+                                fontSize   = 15.sp
                             )
+                        }
+                    } else {
+                        // ── Botón "Me interesa" para usuarios no dueños ───────
+                        Button(
+                            onClick  = { viewModel.toggleInterest() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .height(52.dp),
+                            shape   = MaterialTheme.shapes.extraLarge,
+                            colors  = ButtonDefaults.buttonColors(
+                                containerColor = if (isInterested) Color(0xFFE0E0E0) else RoomBlue
+                            ),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier    = Modifier.size(22.dp),
+                                    color       = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector        = if (isInterested) Icons.Filled.CheckCircle else Icons.Filled.Favorite,
+                                    contentDescription = null,
+                                    modifier           = Modifier.size(20.dp),
+                                    tint               = if (isInterested) RoomBlue else Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text       = if (isInterested) "Ya has mostrado interés" else "Me interesa este piso",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize   = 15.sp,
+                                    color      = if (isInterested) RoomBlue else Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -170,7 +219,7 @@ private fun PostDetailContent(
         // ── Galería de imágenes ──────────────────────────────────────────────
         if (post.images.isNotEmpty()) {
             LazyRow(
-                modifier                = Modifier.fillMaxWidth().height(240.dp),
+                modifier               = Modifier.fillMaxWidth().height(240.dp),
                 horizontalArrangement  = Arrangement.spacedBy(2.dp)
             ) {
                 items(post.images) { imageUrl ->
@@ -235,7 +284,7 @@ private fun PostDetailContent(
                 modifier              = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                InfoChip(Icons.Filled.Group,        "Compañeros", "${post.roommates}")
+                InfoChip(Icons.Filled.Group,         "Compañeros", "${post.roommates}")
                 InfoChip(Icons.Filled.CalendarToday, "Disponible", post.availableFrom.ifEmpty { "Consultar" })
                 InfoChip(
                     icon       = Icons.Filled.Favorite,
@@ -320,18 +369,14 @@ private fun PostDetailContent(
                 OutlinedButton(
                     onClick = {
                         val encoded = URLEncoder.encode(fullAddress, StandardCharsets.UTF_8.toString())
-
-                        // Intent directo a Google Maps
                         val gmmIntent = Intent(
                             Intent.ACTION_VIEW,
                             Uri.parse("geo:0,0?q=$encoded")
                         ).apply { setPackage("com.google.android.apps.maps") }
 
                         if (gmmIntent.resolveActivity(context.packageManager) != null) {
-                            // Google Maps instalado → abre la app
                             context.startActivity(gmmIntent)
                         } else {
-                            // Fallback: abre en el navegador
                             context.startActivity(
                                 Intent(
                                     Intent.ACTION_VIEW,

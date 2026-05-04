@@ -20,36 +20,36 @@ fun HomeScreen(navController: NavController) {
     val innerNavController = rememberNavController()
 
     val tabs = listOf(
-        Triple("Inicio", Icons.Filled.Home, Screen.Matching.route),
-        Triple("Pisos", Icons.Filled.Search, Screen.AddRooms.route),
-        Triple("Chats", Icons.Filled.ChatBubble, Screen.ChatList.route),
-        Triple("Perfil", Icons.Filled.Person, Screen.Profile.route)
+        Triple("Inicio",  Icons.Filled.Home,        Screen.Matching.route),
+        Triple("Pisos",   Icons.Filled.Search,      Screen.AddRooms.route),
+        Triple("Chats",   Icons.Filled.ChatBubble,  Screen.ChatList.route),
+        Triple("Perfil",  Icons.Filled.Person,      Screen.Profile.route)
     )
 
     Scaffold(
         bottomBar = {
             NavigationBar(
                 containerColor = Color.White,
-                contentColor = Color(0xFF1E88E5)
+                contentColor   = Color(0xFF1E88E5)
             ) {
                 tabs.forEachIndexed { index, (label, icon, _) ->
                     NavigationBarItem(
-                        icon = { Icon(icon, contentDescription = label) },
-                        label = { Text(label) },
+                        icon     = { Icon(icon, contentDescription = label) },
+                        label    = { Text(label) },
                         selected = selectedTab == index,
-                        onClick = {
+                        onClick  = {
                             selectedTab = index
                             val route = when (index) {
-                                0 -> Screen.Matching.route
-                                1 -> Screen.AddRooms.route
-                                2 -> Screen.ChatList.route
-                                3 -> Screen.Profile.route
+                                0    -> Screen.Matching.route
+                                1    -> Screen.AddRooms.route
+                                2    -> Screen.ChatList.route
+                                3    -> Screen.Profile.route
                                 else -> Screen.Matching.route
                             }
                             innerNavController.navigate(route) {
                                 popUpTo(0) { saveState = true }
                                 launchSingleTop = true
-                                restoreState = true
+                                restoreState    = true
                             }
                         }
                     )
@@ -58,9 +58,9 @@ fun HomeScreen(navController: NavController) {
         }
     ) { innerPadding ->
         NavHost(
-            navController = innerNavController,
+            navController    = innerNavController,
             startDestination = Screen.Matching.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier         = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Matching.route) {
                 MatchingScreen()
@@ -71,17 +71,28 @@ fun HomeScreen(navController: NavController) {
             composable(Screen.NewRoomPost.route) {
                 AddRoomPostScreen(navController = innerNavController)
             }
-            // ← nuevo: detalle accesible desde el inner nav
             composable(Screen.RoomPostDetail.route) { backStackEntry ->
                 val postId = backStackEntry.arguments?.getString("postId") ?: ""
                 RoomPostDetailScreen(postId = postId, navController = innerNavController)
+            }
+            composable(Screen.EditRoomPost.route) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                EditRoomPostScreen(postId = postId, navController = innerNavController)
+            }
+            composable(Screen.InterestedUsersList.route) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                InterestedUsersListScreen(postId = postId, navController = innerNavController)
+            }
+            composable(Screen.InterestedUserProfile.route) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                InterestedUsersProfileScreen(userId = userId, navController = innerNavController)
             }
             composable(Screen.ChatList.route) {
                 ChatListScreen(navController = navController)
             }
             composable(Screen.ChatDetail.route) { backStackEntry ->
                 val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
-                ChatDetailScreen(chatUserId = chatUserId)
+                ChatDetailScreen(chatUserId = chatUserId, navController = innerNavController)
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(navController = navController)
