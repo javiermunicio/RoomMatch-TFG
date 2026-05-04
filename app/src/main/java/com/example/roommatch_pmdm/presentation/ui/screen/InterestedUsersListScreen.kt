@@ -1,0 +1,230 @@
+package com.example.roommatch_pmdm.presentation.ui.screen
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.roommatch_pmdm.data.repositories.InterestRepository
+import com.example.roommatch_pmdm.data.repositories.UserRepository
+import com.example.roommatch_pmdm.domain.model.Interest
+import com.example.roommatch_pmdm.domain.model.User
+import com.example.roommatch_pmdm.presentation.navigation.Screen
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
+
+private val RoomBlue = Color(0xFF4A90D9)
+private val TextGray = Color(0xFF888888)
+
+// ── Data class combinada ──────────────────────────────────────────────────────
+
+data class InterestedUserItem(
+    val interest: Interest,
+    val user: User?
+)
+
+// ── ViewModel ─────────────────────────────────────────────────────────────────
+
+class InterestedUsersListViewModel(
+    private val interestRepository: InterestRepository,
+    private val userRepository: UserRepository
+) : ViewModel() {
+
+    private val _items = MutableStateFlow<List<InterestedUserItem>>(emptyList())
+    val items: StateFlow<List<InterestedUserItem>> = _items
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    fun loadInterests(postId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            interestRepository.getInterestedUsersFlow(postId).collect { interests ->
+                _items.value = interests.map { interest ->
+                    val user = userRepository.getUser(interest.interestedUserId).getOrNull()
+                    InterestedUserItem(interest, user)
+                }
+                _isLoading.value = false
+            }
+        }
+    }
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InterestedUsersListScreen(
+    postId: String,
+    navController: NavController,
+    viewModel: InterestedUsersListViewModel = koinViewModel()
+) {
+    val items by viewModel.items.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(postId) { viewModel.loadInterests(postId) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Interesados (${items.size})",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor    = Color.White,
+                    titleContentColor = RoomBlue
+                )
+            )
+        }
+    ) { innerPadding ->
+        when {
+            isLoading -> Box(
+                modifier         = Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) { CircularProgressIndicator(color = RoomBlue) }
+
+            items.isEmpty() -> Box(
+                modifier         = Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Aún no hay nadie interesado en este anuncio",
+                    color = TextGray,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            else -> LazyColumn(
+                modifier        = Modifier.fillMaxSize().padding(innerPadding),
+                contentPadding  = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(items, key = { it.interest.id }) { item ->
+                    InterestedUserCard(
+                        item          = item,
+                        onViewProfile = {
+                            navController.navigate(
+                                Screen.InterestedUserProfile.createRoute(item.interest.interestedUserId)
+                            )
+                        },
+                        onChat        = {
+                            navController.navigate(
+                                Screen.ChatDetail.createRoute(item.interest.interestedUserId)
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ── Card ──────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun InterestedUserCard(
+    item: InterestedUserItem,
+    onViewProfile: () -> Unit,
+    onChat: () -> Unit
+) {
+    val user = item.user
+
+    Card(
+        modifier  = Modifier.fillMaxWidth().clickable { onViewProfile() },
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors    = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier          = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Avatar
+            Surface(
+                modifier = Modifier.size(52.dp),
+                shape    = CircleShape,
+                color    = RoomBlue.copy(alpha = 0.1f)
+            ) {
+                if (user?.profileImage?.isNotEmpty() == true) {
+                    AsyncImage(
+                        model              = user.profileImage,
+                        contentDescription = null,
+                        contentScale       = ContentScale.Crop,
+                        modifier           = Modifier.clip(CircleShape)
+                    )
+                } else {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Filled.Person,
+                            contentDescription = null,
+                            tint     = RoomBlue,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+            }
+
+            // Datos
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text       = user?.username?.ifEmpty { item.interest.interestedUsername }
+                        ?: item.interest.interestedUsername,
+                    style      = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                if (user?.location?.isNotEmpty() == true) {
+                    Text(
+                        text  = "📍 ${user.location}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGray
+                    )
+                }
+                if ((user?.budget ?: 0) > 0) {
+                    Text(
+                        text  = "💶 Hasta ${user!!.budget}€/mes",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextGray
+                    )
+                }
+            }
+
+            // Botón chat
+            IconButton(onClick = onChat) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Chat,
+                    contentDescription = "Chatear",
+                    tint     = RoomBlue,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+    }
+}

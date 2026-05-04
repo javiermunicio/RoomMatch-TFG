@@ -1,18 +1,32 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.viewmodel.EditRoomPostViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -29,8 +43,16 @@ fun EditRoomPostScreen(
     val isLoading       by viewModel.isLoading.collectAsState()
     val isSaved         by viewModel.isSaved.collectAsState()
     val validationError by viewModel.validationError.collectAsState()
+    val newImageUris    by viewModel.newImageUris.collectAsState()
+    val uploadProgress  by viewModel.uploadProgress.collectAsState()
 
     var showConfirmDialog by remember { mutableStateOf(false) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) viewModel.addImages(uris)
+    }
 
     LaunchedEffect(postId) { viewModel.loadPost(postId) }
 
@@ -60,9 +82,7 @@ fun EditRoomPostScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Editar anuncio", fontWeight = FontWeight.Bold)
-                },
+                title = { Text("Editar anuncio", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -90,6 +110,19 @@ fun EditRoomPostScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+
+                // ── Gestión de imágenes ──────────────────────────────────────
+                EditImageSection(
+                    existingUrls  = roomPost.images,
+                    newUris       = newImageUris,
+                    onAddImages   = { imagePickerLauncher.launch("image/*") },
+                    onRemoveExisting = { viewModel.removeExistingImage(it) },
+                    onRemoveNew      = { viewModel.removeNewImage(it) }
+                )
+
+                HorizontalDivider()
+
+                // ── Campos ───────────────────────────────────────────────────
                 OutlinedTextField(
                     modifier      = Modifier.fillMaxWidth(),
                     value         = roomPost.title,
@@ -136,16 +169,30 @@ fun EditRoomPostScreen(
                     placeholder   = { Text("Ej: 01/06/2025") }
                 )
 
-                validationError?.let {
-                    Text(
-                        text  = it,
-                        color = Color.Red,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                // ── Progreso de subida ───────────────────────────────────────
+                uploadProgress?.let {
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier              = Modifier.fillMaxWidth()
+                    ) {
+                        CircularProgressIndicator(
+                            modifier    = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color       = RoomBlue
+                        )
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = RoomBlue)
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // ── Error ────────────────────────────────────────────────────
+                validationError?.let {
+                    Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                }
 
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // ── Botón guardar ────────────────────────────────────────────
                 Button(
                     onClick  = { showConfirmDialog = true },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -164,6 +211,129 @@ fun EditRoomPostScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+// ── Sección de imágenes ───────────────────────────────────────────────────────
+
+@Composable
+private fun EditImageSection(
+    existingUrls:     List<String>,
+    newUris:          List<Uri>,
+    onAddImages:      () -> Unit,
+    onRemoveExisting: (String) -> Unit,
+    onRemoveNew:      (Uri) -> Unit
+) {
+    val total = existingUrls.size + newUris.size
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier              = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "Fotos del piso",
+                style      = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color      = RoomBlue
+            )
+            Text("$total/5", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        }
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement   = Arrangement.spacedBy(8.dp),
+            modifier              = Modifier.fillMaxWidth()
+        ) {
+            // Imágenes ya subidas (URLs remotas)
+            existingUrls.forEach { url ->
+                EditImageThumbnail(
+                    model    = url,
+                    onRemove = { onRemoveExisting(url) }
+                )
+            }
+
+            // Imágenes nuevas seleccionadas localmente
+            newUris.forEach { uri ->
+                EditImageThumbnail(
+                    model    = uri,
+                    onRemove = { onRemoveNew(uri) }
+                )
+            }
+
+            // Botón "+" si hay hueco
+            if (total < 5) {
+                AddImageButton(onClick = onAddImages)
+            }
+        }
+
+        if (total == 0) {
+            Text(
+                "Añade hasta 5 fotos para que los interesados puedan ver el piso",
+                style    = MaterialTheme.typography.bodySmall,
+                color    = Color.Gray
+            )
+        }
+    }
+}
+
+@Composable
+private fun EditImageThumbnail(model: Any, onRemove: () -> Unit) {
+    Box(modifier = Modifier.size(90.dp)) {
+        AsyncImage(
+            model              = model,
+            contentDescription = null,
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(10.dp))
+                .border(1.dp, Color(0xFFDDDDDD), RoundedCornerShape(10.dp))
+        )
+        IconButton(
+            onClick  = onRemove,
+            modifier = Modifier
+                .size(24.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 4.dp, y = (-4).dp)
+                .background(Color.White, CircleShape)
+                .border(1.dp, Color(0xFFDDDDDD), CircleShape)
+        ) {
+            Icon(
+                Icons.Filled.Close,
+                contentDescription = "Eliminar imagen",
+                tint     = Color.Red,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddImageButton(onClick: () -> Unit) {
+    Box(
+        modifier         = Modifier
+            .size(90.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .border(1.5.dp, RoomBlue, RoundedCornerShape(10.dp))
+            .background(RoomBlue.copy(alpha = 0.05f))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = "Añadir imagen",
+                tint     = RoomBlue,
+                modifier = Modifier.size(28.dp)
+            )
+            Text(
+                "Añadir",
+                fontSize   = 11.sp,
+                color      = RoomBlue,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

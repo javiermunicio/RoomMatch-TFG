@@ -10,7 +10,6 @@ import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 // ─── ChatListViewModel ───────────────────────────────────────────────────────
 
@@ -33,11 +32,21 @@ class ChatListViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Recarga cada vez que se abre la pantalla — simple y fiable
-                val matchedIds = matchRepository.getMatchedUserIds(currentUserId)
-                _chatUsers.value = matchedIds.mapNotNull { userId ->
+                // 1. Usuarios con match mutuo
+                val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
+
+                // 2. Usuarios con conversación activa (al menos 1 mensaje), sin importar el match
+                val activeIds = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
+
+                // 3. Unión de ambos conjuntos (sin duplicados)
+                val allUserIds = (matchedIds + activeIds).toList()
+
+                // 4. Construir la lista de ChatUser con el último mensaje de cada uno
+                _chatUsers.value = allUserIds.mapNotNull { userId ->
                     val user    = chatRepository.getUserData(userId)
                     val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
+
+                    // Si no hay ningún mensaje y el usuario solo está por match, mostrarlo igual
                     ChatUser(
                         id           = userId,
                         username     = user?.username?.ifEmpty { user.email } ?: userId,
@@ -46,18 +55,17 @@ class ChatListViewModel(
                         timestamp    = lastMsg?.timestamp ?: 0L,
                         isRead       = lastMsg?.isRead ?: true
                     )
-                }
+                }.sortedByDescending { it.timestamp } // más reciente primero
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
     fun refresh() {
         loadChats()
     }
 }
-
-// ─── ChatDetailViewModel ─────────────────────────────────────────────────────
 
 // ─── ChatDetailViewModel ─────────────────────────────────────────────────────
 
@@ -107,7 +115,6 @@ class ChatDetailViewModel(
     fun markMessagesAsRead(otherUserId: String) {
         val currentUid = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
-            // Le pasamos el trabajo al repositorio
             chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
     }
