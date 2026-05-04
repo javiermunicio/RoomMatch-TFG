@@ -10,6 +10,8 @@ import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.content.Context
+import com.example.roommatch_pmdm.notifications.NotificationHelper
 
 // ─── ChatListViewModel ───────────────────────────────────────────────────────
 
@@ -61,7 +63,8 @@ class ChatListViewModel(
 
 class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val context: Context                   // ← añadido
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -80,13 +83,35 @@ class ChatDetailViewModel(
 
     val currentUserId: String? get() = authRepository.currentUser?.uid
 
+    // Guardamos el ID del chat abierto para no notificar si ya estamos dentro
+    private var activeChatUserId: String? = null
+
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
+        activeChatUserId = otherUserId
+
         viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
+                val previous = _messages.value
+                val newMsgs  = msgs.filter { new ->
+                    previous.none { it.id == new.id }
+                }
+
+                // Solo notificar si el mensaje es del otro usuario
+                // y hay al menos un mensaje nuevo
+                newMsgs.forEach { msg ->
+                    if (msg.senderId != uid) {
+                        NotificationHelper.showChatNotification(
+                            context    = context,
+                            senderName = "Nuevo mensaje",   // puedes pasar el username real
+                            message    = msg.content
+                        )
+                    }
+                }
+
                 _messages.value = msgs
             }
         }
