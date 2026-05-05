@@ -11,13 +11,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 
 @Composable
 fun HomeScreen(navController: NavController) {
-    var selectedTab by remember { mutableStateOf(0) }
     val innerNavController = rememberNavController()
+    val currentBackStackEntry by innerNavController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
 
     val tabs = listOf(
         Triple("Inicio",  Icons.Filled.Home,        Screen.Matching.route),
@@ -25,6 +27,17 @@ fun HomeScreen(navController: NavController) {
         Triple("Chats",   Icons.Filled.ChatBubble,  Screen.ChatList.route),
         Triple("Perfil",  Icons.Filled.Person,      Screen.Profile.route)
     )
+    val selectedTab = when {
+        currentRoute == Screen.Matching.route -> 0
+        currentRoute?.startsWith("addRooms") == true ||
+                currentRoute?.startsWith("newRoomPost") == true ||
+                currentRoute?.startsWith("room_post") == true ||
+                currentRoute?.startsWith("edit_room") == true ||
+                currentRoute?.startsWith("interested") == true -> 1
+        currentRoute?.startsWith("chat") == true -> 2
+        currentRoute == Screen.Profile.route -> 3
+        else -> 0
+    }
 
     Scaffold(
         bottomBar = {
@@ -38,7 +51,6 @@ fun HomeScreen(navController: NavController) {
                         label    = { Text(label) },
                         selected = selectedTab == index,
                         onClick  = {
-                            selectedTab = index
                             val route = when (index) {
                                 0    -> Screen.Matching.route
                                 1    -> Screen.AddRooms.route

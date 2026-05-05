@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +34,7 @@ import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 // ── Colores de burbuja ────────────────────────────────────────────────────────
 private val BubbleMe    = Color(0xFF1E88E5)
@@ -174,11 +176,10 @@ fun ChatDetailScreen(
     val messageInput by viewModel.messageInput.collectAsState()
     val currentUid   by viewModel.currentUserIdFlow.collectAsState()
     val listState    = rememberLazyListState()
+    val otherUser by viewModel.otherUser.collectAsState()
 
-    // AQUÍ ESTÁ EL CAMBIO 1: Avisamos de que entramos al chat para leer
     LaunchedEffect(chatUserId) {
         viewModel.loadMessages(chatUserId)
-        // Llama a la función de tu ViewModel que actualiza Firebase
         viewModel.markMessagesAsRead(chatUserId)
     }
 
@@ -191,12 +192,39 @@ fun ChatDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat", fontWeight = FontWeight.Bold) },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(38.dp),
+                            shape    = CircleShape,
+                            color    = Color(0xFFDDDDDD)
+                        ) {
+                            AsyncImage(
+                                model              = otherUser?.profileImage
+                                    ?.ifEmpty { "https://via.placeholder.com/38" }
+                                    ?: "https://via.placeholder.com/38",
+                                contentDescription = null,
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
+                            )
+                        }
+                        Text(
+                            text       = otherUser?.username ?: "Chat",
+                            fontWeight = FontWeight.Bold,
+                            fontSize   = 16.sp
+                        )
+                    }
+                },
                 navigationIcon = {
                     if (navController != null) {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Volver"
                             )
                         }
