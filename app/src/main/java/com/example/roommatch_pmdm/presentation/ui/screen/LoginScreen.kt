@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,9 +40,12 @@ fun LoginScreen(
     val loginSuccess = viewModel.loginSuccess.collectAsState()
     val errorMessage = viewModel.errorMessage.collectAsState()
 
-    if (loginSuccess.value) {
-        navController.navigate(Screen.Home.route) {
-            popUpTo(Screen.Login.route) { inclusive = true }
+    LaunchedEffect(loginSuccess.value) {
+        if (loginSuccess.value) {
+            navController.navigate(Screen.Home.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
+                launchSingleTop = true
+            }
         }
     }
 
@@ -53,10 +57,10 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_login_roommatch),
-                contentDescription = "Imagen de ejemplo"
-            )
+        Image(
+            painter = painterResource(id = R.drawable.logo_login_roommatch),
+            contentDescription = "Imagen de ejemplo"
+        )
         Text(
             text = "Encuentra a tu compañero de piso ideal",
             style = MaterialTheme.typography.bodySmall,
@@ -142,7 +146,9 @@ fun LoginScreen(
             }
         }
     }
+
 }
+
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {

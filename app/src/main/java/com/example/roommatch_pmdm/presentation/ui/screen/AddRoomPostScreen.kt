@@ -30,6 +30,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.ui.components.ActionMenu
+import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.AddRoomPostViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -58,7 +59,10 @@ fun AddRoomPostScreen(
     LaunchedEffect(isSaved) {
         if (isSaved) {
             viewModel.clearSaved()
-            navController.popBackStack()
+            navController.navigate(Screen.AddRooms.route) {
+                popUpTo(Screen.AddRooms.route) { inclusive = false }
+                launchSingleTop = true
+            }
         }
     }
 
