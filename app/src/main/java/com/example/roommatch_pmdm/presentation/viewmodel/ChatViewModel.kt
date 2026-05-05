@@ -68,7 +68,7 @@ class ChatListViewModel(
 class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
-    private val context: Context                   // ← añadido
+    private val context: Context
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -110,8 +110,6 @@ class ChatDetailViewModel(
         viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
                 val sorted = msgs.sortedBy { it.timestamp }
-
-                // Notificar solo mensajes realmente nuevos (no vistos antes)
                 val previousIds = _messages.value.map { it.id }.toSet()
                 val newMsgs = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
@@ -147,7 +145,6 @@ class ChatDetailViewModel(
             _messageInput.value = ""
         }
     }
-
     fun markMessagesAsRead(otherUserId: String) {
         val currentUid = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
