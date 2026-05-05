@@ -10,7 +10,12 @@ import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
+import com.example.roommatch_pmdm.notifications.NotificationHelper
 
 // ─── ChatListViewModel ───────────────────────────────────────────────────────
 
@@ -28,14 +33,16 @@ class ChatListViewModel(
 
     init { loadChats() }
 
-    private fun loadChats() {
+    fun loadChats() {
         val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Recarga cada vez que se abre la pantalla — simple y fiable
-                val matchedIds = matchRepository.getMatchedUserIds(currentUserId)
-                _chatUsers.value = matchedIds.mapNotNull { userId ->
+                val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
+                val activeIds = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
+                val allUserIds = (matchedIds + activeIds).toList()
+
+                _chatUsers.value = allUserIds.mapNotNull { userId ->
                     val user    = chatRepository.getUserData(userId)
                     val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
                     ChatUser(
@@ -46,24 +53,22 @@ class ChatListViewModel(
                         timestamp    = lastMsg?.timestamp ?: 0L,
                         isRead       = lastMsg?.isRead ?: true
                     )
-                }
+                }.sortedByDescending { it.timestamp }
             } finally {
                 _isLoading.value = false
             }
         }
     }
-    fun refresh() {
-        loadChats()
-    }
-}
 
-// ─── ChatDetailViewModel ─────────────────────────────────────────────────────
+    fun refresh() { loadChats() }
+}
 
 // ─── ChatDetailViewModel ─────────────────────────────────────────────────────
 
 class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val context: Context                   // ← añadido
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -82,13 +87,44 @@ class ChatDetailViewModel(
 
     val currentUserId: String? get() = authRepository.currentUser?.uid
 
+    // Guardamos el ID del chat abierto para no notificar si ya estamos dentro
+    private var activeChatUserId: String? = null
+
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
+        activeChatUserId = otherUserId
+
         viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
+                val previous = _messages.value
+                val newMsgs  = msgs.filter { new ->
+                    previous.none { it.id == new.id }
+                }
+
+                // Solo notificar si el mensaje es del otro usuario,
+                // la lista ya tenía mensajes previos (no es la carga inicial)
+                // y tenemos permiso en Android 13+
+                if (previous.isNotEmpty()) {
+                    newMsgs.filter { it.senderId != uid }.forEach { msg ->
+                        val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        } else true
+
+                        if (canNotify) {
+                            NotificationHelper.showChatNotification(
+                                context    = context,
+                                senderName = "Nuevo mensaje",
+                                message    = msg.content
+                            )
+                        }
+                    }
+                }
+
                 _messages.value = msgs
             }
         }
@@ -107,7 +143,6 @@ class ChatDetailViewModel(
     fun markMessagesAsRead(otherUserId: String) {
         val currentUid = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
-            // Le pasamos el trabajo al repositorio
             chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
     }

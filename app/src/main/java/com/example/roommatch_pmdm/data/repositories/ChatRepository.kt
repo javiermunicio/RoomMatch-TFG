@@ -1,7 +1,6 @@
 package com.example.roommatch_pmdm.data.repositories
 
 import com.example.roommatch_pmdm.domain.model.ChatMessage
-import com.example.roommatch_pmdm.domain.model.ChatUser
 import com.example.roommatch_pmdm.domain.model.User
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -15,7 +14,7 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
     private val messagesCollection = firestore.collection("messages")
     private val usersCollection    = firestore.collection("users")
 
-    // ID de conversación determinista (siempre el mismo para los dos usuarios)
+    // ID de conversación determinista
     fun conversationId(uid1: String, uid2: String): String =
         if (uid1 < uid2) "${uid1}_${uid2}" else "${uid2}_${uid1}"
 
@@ -37,9 +36,24 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             awaitClose { listener.remove() }
         }
 
-    // Envía un mensaje
+    /**
+     * Envía un mensaje y garantiza que el documento raíz de la conversación
+     * tenga el campo "participants" con los dos UIDs.
+     * Esto permite consultar conversaciones por participante de forma fiable,
+     * sin depender de parsear el ID del documento.
+     */
     suspend fun sendMessage(currentUserId: String, otherUserId: String, content: String) {
-        val convId = conversationId(currentUserId, otherUserId)
+        val convId  = conversationId(currentUserId, otherUserId)
+        val convRef = messagesCollection.document(convId)
+
+        // Crear el documento raíz con participantes si no existe aún
+        val convSnap = convRef.get().await()
+        if (!convSnap.exists()) {
+            convRef.set(
+                mapOf("participants" to listOf(currentUserId, otherUserId))
+            ).await()
+        }
+
         val msg = ChatMessage(
             id          = System.currentTimeMillis().toString(),
             senderId    = currentUserId,
@@ -48,15 +62,12 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             timestamp   = System.currentTimeMillis(),
             isRead      = false
         )
-        messagesCollection.document(convId).collection("msgs")
-            .document(msg.id).set(msg).await()
+        convRef.collection("msgs").document(msg.id).set(msg).await()
     }
 
-    // Obtiene los datos de usuario para mostrar en la lista de chats
-    suspend fun getUserData(userId: String): User? {
-        return usersCollection.document(userId).get().await()
-            .toObject(User::class.java)
-    }
+    // Obtiene los datos de usuario
+    suspend fun getUserData(userId: String): User? =
+        usersCollection.document(userId).get().await().toObject(User::class.java)
 
     // Obtiene el último mensaje de una conversación
     suspend fun getLastMessage(currentUserId: String, otherUserId: String): ChatMessage? {
@@ -68,26 +79,44 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
         return snap.documents.firstOrNull()?.toObject(ChatMessage::class.java)
     }
 
-
     suspend fun markMessagesAsRead(currentUserId: String, otherUserId: String) {
         try {
             val convId = conversationId(currentUserId, otherUserId)
-            val msgsRef = messagesCollection.document(convId).collection("msgs")
-
-            // Usamos recipientId en lugar de whereNotEqualTo para evitar bloqueos de Firebase
-            val unreadQuery = msgsRef
+            val unread = messagesCollection.document(convId).collection("msgs")
                 .whereEqualTo("recipientId", currentUserId)
                 .whereEqualTo("isRead", false)
-                .get()
-                .await()
+                .get().await()
 
             val batch = firestore.batch()
-            for (doc in unreadQuery.documents) {
+            for (doc in unread.documents) {
                 batch.update(doc.reference, "isRead", true)
             }
             batch.commit().await()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    /**
+     * Devuelve los IDs de todos los usuarios con los que [currentUserId]
+     * tiene una conversación activa, usando el campo "participants".
+     * Funciona tanto si hay match como si el chat fue iniciado directamente.
+     */
+    suspend fun getActiveConversationUserIds(currentUserId: String): List<String> {
+        return try {
+            val snap = messagesCollection
+                .whereArrayContains("participants", currentUserId)
+                .get()
+                .await()
+
+            snap.documents.mapNotNull { doc ->
+                @Suppress("UNCHECKED_CAST")
+                val participants = doc.get("participants") as? List<String>
+                    ?: return@mapNotNull null
+                participants.firstOrNull { it != currentUserId }
+            }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 }

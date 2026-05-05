@@ -16,18 +16,14 @@ import com.example.roommatch_pmdm.presentation.navigation.Screen
 
 @Composable
 fun HomeScreen(navController: NavController) {
-    var selectedTab        by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) }
     val innerNavController = rememberNavController()
 
-    // Inicio  → MatchingScreen  (swipe de compañeros)
-    // Pisos   → RoomPostListScreen (tablón de habitaciones) ← corregido
-    // Chats   → ChatListScreen
-    // Perfil  → ProfileScreen
     val tabs = listOf(
         Triple("Inicio",  Icons.Filled.Home,        Screen.Matching.route),
-        Triple("Pisos",   Icons.Filled.Search,       Screen.AddRooms.route),
-        Triple("Chats",   Icons.Filled.ChatBubble,   Screen.ChatList.route),
-        Triple("Perfil",  Icons.Filled.Person,       Screen.Profile.route)
+        Triple("Pisos",   Icons.Filled.Search,      Screen.AddRooms.route),
+        Triple("Chats",   Icons.Filled.ChatBubble,  Screen.ChatList.route),
+        Triple("Perfil",  Icons.Filled.Person,      Screen.Profile.route)
     )
 
     Scaffold(
@@ -44,10 +40,10 @@ fun HomeScreen(navController: NavController) {
                         onClick  = {
                             selectedTab = index
                             val route = when (index) {
-                                0 -> Screen.Matching.route
-                                1 -> Screen.AddRooms.route   // ← antes era Matching aquí también
-                                2 -> Screen.ChatList.route
-                                3 -> Screen.Profile.route
+                                0    -> Screen.Matching.route
+                                1    -> Screen.AddRooms.route
+                                2    -> Screen.ChatList.route
+                                3    -> Screen.Profile.route
                                 else -> Screen.Matching.route
                             }
                             innerNavController.navigate(route) {
@@ -75,12 +71,28 @@ fun HomeScreen(navController: NavController) {
             composable(Screen.NewRoomPost.route) {
                 AddRoomPostScreen(navController = innerNavController)
             }
+            composable(Screen.RoomPostDetail.route) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                RoomPostDetailScreen(postId = postId, navController = innerNavController)
+            }
+            composable(Screen.EditRoomPost.route) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                EditRoomPostScreen(postId = postId, navController = innerNavController)
+            }
+            composable(Screen.InterestedUsersList.route) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                InterestedUsersListScreen(postId = postId, navController = innerNavController)
+            }
+            composable(Screen.InterestedUserProfile.route) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                InterestedUsersProfileScreen(userId = userId, navController = innerNavController)
+            }
             composable(Screen.ChatList.route) {
                 ChatListScreen(navController = navController)
             }
             composable(Screen.ChatDetail.route) { backStackEntry ->
                 val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
-                ChatDetailScreen(chatUserId = chatUserId)
+                ChatDetailScreen(chatUserId = chatUserId, navController = innerNavController)
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(navController = navController)

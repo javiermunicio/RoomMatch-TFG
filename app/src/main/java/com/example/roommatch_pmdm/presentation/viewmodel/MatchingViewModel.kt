@@ -1,17 +1,24 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.UserCard
+import com.example.roommatch_pmdm.notifications.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class MatchingViewModel(
     private val matchRepository: MatchRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _userCards = MutableStateFlow<List<UserCard>>(emptyList())
@@ -29,9 +36,7 @@ class MatchingViewModel(
     private val _matchedUser = MutableStateFlow<UserCard?>(null)
     val matchedUser: StateFlow<UserCard?> = _matchedUser
 
-    init {
-        loadUserCards()
-    }
+    init { loadUserCards() }
 
     private fun loadUserCards() {
         val currentUserId = authRepository.currentUser?.uid ?: return
@@ -66,20 +71,27 @@ class MatchingViewModel(
             if (isMatch) {
                 _matchedUser.value    = currentCard
                 _showMatchPopup.value = true
+
+                val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else true
+
+                if (canNotify) {
+                    NotificationHelper.showMatchNotification(
+                        context         = context,
+                        matchedUsername = currentCard.username
+                    )
+                }
             }
             moveToNextCard()
         }
     }
 
-    fun onPass() {
-        moveToNextCard()
-    }
+    fun onPass() { moveToNextCard() }
 
-    private fun moveToNextCard() {
-        _currentIndex.value += 1
-    }
+    private fun moveToNextCard() { _currentIndex.value += 1 }
 
-    fun dismissMatchPopup() {
-        _showMatchPopup.value = false
-    }
+    fun dismissMatchPopup() { _showMatchPopup.value = false }
 }
