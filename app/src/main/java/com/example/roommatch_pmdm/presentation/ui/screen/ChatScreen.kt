@@ -40,8 +40,6 @@ private val BubbleOther = Color(0xFFEEEEEE)
 private val TextMe      = Color.White
 private val TextOther   = Color(0xFF212121)
 
-// ── ChatListScreen ────────────────────────────────────────────────────────────
-
 @Composable
 fun ChatListScreen(
     navController: NavController,
@@ -50,9 +48,7 @@ fun ChatListScreen(
     val chatUsers by viewModel.chatUsers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.refresh()
-    }
+    LaunchedEffect(Unit) { viewModel.refresh() }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -163,8 +159,6 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
     }
 }
 
-// ── ChatDetailScreen ──────────────────────────────────────────────────────────
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailScreen(
@@ -178,14 +172,11 @@ fun ChatDetailScreen(
     val listState    = rememberLazyListState()
     val otherUser    by viewModel.otherUser.collectAsState()
 
-    // Al entrar en la pantalla, resetear estado y cargar este chat concreto
     LaunchedEffect(chatUserId) {
-        viewModel.resetState()
         viewModel.loadMessages(chatUserId)
         viewModel.markMessagesAsRead(chatUserId)
     }
 
-    // Scroll al último mensaje cuando cambia la lista
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.lastIndex)
@@ -294,8 +285,6 @@ fun ChatDetailScreen(
         }
     }
 }
-
-// ── Burbuja ───────────────────────────────────────────────────────────────────
 
 @Composable
 fun MessageBubble(message: ChatMessage, currentUserId: String) {
