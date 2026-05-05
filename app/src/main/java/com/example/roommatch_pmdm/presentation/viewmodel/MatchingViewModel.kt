@@ -1,6 +1,10 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
@@ -68,10 +72,18 @@ class MatchingViewModel(
                 _matchedUser.value    = currentCard
                 _showMatchPopup.value = true
 
-                NotificationHelper.showMatchNotification(
-                    context  = context,
-                    matchedUsername = currentCard.username
-                )
+                val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else true
+
+                if (canNotify) {
+                    NotificationHelper.showMatchNotification(
+                        context         = context,
+                        matchedUsername = currentCard.username
+                    )
+                }
             }
             moveToNextCard()
         }

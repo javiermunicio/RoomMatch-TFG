@@ -10,7 +10,11 @@ import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import com.example.roommatch_pmdm.notifications.NotificationHelper
 
 // ─── ChatListViewModel ───────────────────────────────────────────────────────
@@ -100,15 +104,24 @@ class ChatDetailViewModel(
                     previous.none { it.id == new.id }
                 }
 
-                // Solo notificar si el mensaje es del otro usuario
-                // y hay al menos un mensaje nuevo
-                newMsgs.forEach { msg ->
-                    if (msg.senderId != uid) {
-                        NotificationHelper.showChatNotification(
-                            context    = context,
-                            senderName = "Nuevo mensaje",   // puedes pasar el username real
-                            message    = msg.content
-                        )
+                // Solo notificar si el mensaje es del otro usuario,
+                // la lista ya tenía mensajes previos (no es la carga inicial)
+                // y tenemos permiso en Android 13+
+                if (previous.isNotEmpty()) {
+                    newMsgs.filter { it.senderId != uid }.forEach { msg ->
+                        val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        } else true
+
+                        if (canNotify) {
+                            NotificationHelper.showChatNotification(
+                                context    = context,
+                                senderName = "Nuevo mensaje",
+                                message    = msg.content
+                            )
+                        }
                     }
                 }
 

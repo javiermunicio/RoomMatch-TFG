@@ -1,6 +1,10 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
@@ -102,11 +106,19 @@ class RoomPostDetailViewModel(
                         _isInterested.value   = true
                         _successMessage.value = "¡El dueño del piso ha sido notificado de tu interés!"
 
-                        NotificationHelper.showInterestNotification(
-                            context            = context,
-                            interestedUsername = username,
-                            postTitle          = postTitle
-                        )
+                        val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        } else true
+
+                        if (canNotify) {
+                            NotificationHelper.showInterestNotification(
+                                context            = context,
+                                interestedUsername = username,
+                                postTitle          = postTitle
+                            )
+                        }
                     },
                     onFailure = { _errorMessage.value = "Error al registrar el interés" }
                 )

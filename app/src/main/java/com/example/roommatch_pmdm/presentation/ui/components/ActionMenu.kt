@@ -43,7 +43,7 @@ fun ActionMenu(title:String, navController: NavController) {
                 onDismissRequest = { expanded = false }
             ) {
                 DropdownMenuItem(
-                    text = {},
+                    text = {("Atrás")},
                     leadingIcon = {
                         Icon(
 
@@ -60,16 +60,20 @@ fun ActionMenu(title:String, navController: NavController) {
                 DropdownMenuItem(
                     text = { Text("Tablón de Anuncios") },
                     onClick = {
-                        // Acción 1
                         expanded = false
-                        navController.navigate(Screen.Home.route)
+                        navController.navigate(Screen.AddRooms.route) {
+                            popUpTo(Screen.AddRooms.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
                     }
                 )
                 DropdownMenuItem(
                     text = { Text("Publicar Habitación") },
                     onClick = {
                         expanded = false
-                        navController.navigate(Screen.NewRoomPost.route) // ← antes era AddRooms
+                        navController.navigate(Screen.NewRoomPost.route) {
+                            launchSingleTop = true
+                        }
                     }
                 )
                 HorizontalDivider()
@@ -80,7 +84,10 @@ fun ActionMenu(title:String, navController: NavController) {
                     onClick = {
                         // Simplemente cierra el menú desplegable
                         expanded = false
-                        navController.navigate(Screen.Login.route)
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
 
                     }
                 )
