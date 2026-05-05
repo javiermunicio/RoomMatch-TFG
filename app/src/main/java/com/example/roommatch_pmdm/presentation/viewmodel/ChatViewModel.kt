@@ -1,5 +1,10 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
@@ -7,23 +12,18 @@ import com.example.roommatch_pmdm.data.repositories.ChatRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.ChatUser
+import com.example.roommatch_pmdm.notifications.NotificationHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.content.ContextCompat
-import com.example.roommatch_pmdm.notifications.NotificationHelper
 
 // ─── ChatListViewModel ───────────────────────────────────────────────────────
 
 class ChatListViewModel(
     private val matchRepository: MatchRepository,
-    private val authRepository:  AuthRepository,
-    private val chatRepository:  ChatRepository
+    private val authRepository: AuthRepository,
+    private val chatRepository: ChatRepository
 ) : ViewModel() {
 
     private val _chatUsers = MutableStateFlow<List<ChatUser>>(emptyList())
@@ -44,7 +44,7 @@ class ChatListViewModel(
                 val allUserIds = (matchedIds + activeIds).toList()
 
                 _chatUsers.value = allUserIds.mapNotNull { userId ->
-                    val user    = chatRepository.getUserData(userId)
+                    val user = chatRepository.getUserData(userId)
                     val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
                     ChatUser(
                         id           = userId,
@@ -78,28 +78,30 @@ class ChatDetailViewModel(
     private val _messageInput = MutableStateFlow("")
     val messageInput: StateFlow<String> = _messageInput
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
-
     private val _currentUserIdFlow = MutableStateFlow(
         authRepository.currentUser?.uid ?: ""
     )
     val currentUserIdFlow: StateFlow<String> = _currentUserIdFlow
 
-    val currentUserId: String? get() = authRepository.currentUser?.uid
-
     private val _otherUser = MutableStateFlow<ChatUser?>(null)
     val otherUser: StateFlow<ChatUser?> = _otherUser
 
-    // Job para cancelar el collector anterior si se llama loadMessages de nuevo
     private var messagesJob: Job? = null
+    private var currentOtherUserId: String? = null
 
-    fun onMessageInputChanged(text: String) { _messageInput.value = text }
+    fun onMessageInputChanged(text: String) {
+        _messageInput.value = text
+    }
 
     fun loadMessages(otherUserId: String) {
+        // Evitar recargar si ya estamos escuchando este mismo chat
+        if (otherUserId == currentOtherUserId && messagesJob?.isActive == true) return
+
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
+        currentOtherUserId = otherUserId
 
+        // Cargar datos del otro usuario
         viewModelScope.launch {
             val user = chatRepository.getUserData(otherUserId)
             _otherUser.value = ChatUser(
@@ -109,16 +111,19 @@ class ChatDetailViewModel(
             )
         }
 
-        // Cancelar collector anterior antes de crear uno nuevo
+        // Cancelar listener anterior y crear uno nuevo
         messagesJob?.cancel()
+        _messages.value = emptyList()
+
         messagesJob = viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
                 val sorted = msgs.sortedBy { it.timestamp }
 
+                // Detectar mensajes nuevos para notificación
                 val previousIds = _messages.value.map { it.id }.toSet()
-                val newMsgs = sorted.filter { it.id !in previousIds && it.senderId != uid }
+                val newIncoming = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
-                if (_messages.value.isNotEmpty() && newMsgs.isNotEmpty()) {
+                if (_messages.value.isNotEmpty() && newIncoming.isNotEmpty()) {
                     val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         ContextCompat.checkSelfPermission(
                             context, Manifest.permission.POST_NOTIFICATIONS
@@ -126,7 +131,7 @@ class ChatDetailViewModel(
                     } else true
 
                     if (canNotify) {
-                        newMsgs.forEach { msg ->
+                        newIncoming.forEach { msg ->
                             NotificationHelper.showChatNotification(
                                 context    = context,
                                 senderName = _otherUser.value?.username ?: "Nuevo mensaje",
@@ -142,12 +147,21 @@ class ChatDetailViewModel(
     }
 
     fun sendMessage(otherUserId: String) {
-        val uid     = authRepository.currentUser?.uid ?: return
+        val uid = authRepository.currentUser?.uid ?: return
         val content = _messageInput.value.trim()
         if (content.isEmpty()) return
+
+        // Limpiar input ANTES de enviar para feedback inmediato
+        _messageInput.value = ""
+
         viewModelScope.launch {
-            chatRepository.sendMessage(uid, otherUserId, content)
-            _messageInput.value = ""
+            try {
+                chatRepository.sendMessage(uid, otherUserId, content)
+            } catch (e: Exception) {
+                // Si falla, restaurar el texto para que el usuario pueda reintentar
+                _messageInput.value = content
+                e.printStackTrace()
+            }
         }
     }
 
@@ -156,6 +170,15 @@ class ChatDetailViewModel(
         viewModelScope.launch {
             chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
+    }
+
+    fun resetState() {
+        messagesJob?.cancel()
+        messagesJob = null
+        currentOtherUserId = null
+        _messages.value = emptyList()
+        _messageInput.value = ""
+        _otherUser.value = null
     }
 
     override fun onCleared() {
