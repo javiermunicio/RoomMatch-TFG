@@ -87,7 +87,8 @@ class ChatDetailViewModel(
 
     val currentUserId: String? get() = authRepository.currentUser?.uid
 
-    // Guardamos el ID del chat abierto para no notificar si ya estamos dentro
+    private val _otherUser = MutableStateFlow<ChatUser?>(null)
+    val otherUser: StateFlow<ChatUser?> = _otherUser
     private var activeChatUserId: String? = null
 
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
@@ -98,15 +99,20 @@ class ChatDetailViewModel(
         activeChatUserId = otherUserId
 
         viewModelScope.launch {
+            val user = chatRepository.getUserData(otherUserId)
+            _otherUser.value = ChatUser(
+                id           = otherUserId,
+                username     = user?.username?.ifEmpty { user.email } ?: otherUserId,
+                profileImage = user?.profileImage ?: ""
+            )
+        }
+
+        viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
                 val previous = _messages.value
                 val newMsgs  = msgs.filter { new ->
                     previous.none { it.id == new.id }
                 }
-
-                // Solo notificar si el mensaje es del otro usuario,
-                // la lista ya tenía mensajes previos (no es la carga inicial)
-                // y tenemos permiso en Android 13+
                 if (previous.isNotEmpty()) {
                     newMsgs.filter { it.senderId != uid }.forEach { msg ->
                         val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -125,7 +131,7 @@ class ChatDetailViewModel(
                     }
                 }
 
-                _messages.value = msgs
+                _messages.value = msgs.sortedBy { it.timestamp }
             }
         }
     }
