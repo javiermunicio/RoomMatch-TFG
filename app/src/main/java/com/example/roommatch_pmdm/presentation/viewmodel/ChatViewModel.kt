@@ -91,9 +91,7 @@ class ChatDetailViewModel(
     val otherUser: StateFlow<ChatUser?> = _otherUser
     private var activeChatUserId: String? = null
 
-    fun onMessageInputChanged(text: String) {
-        _messageInput.value = text
-    }
+    fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
@@ -103,72 +101,57 @@ class ChatDetailViewModel(
         viewModelScope.launch {
             val user = chatRepository.getUserData(otherUserId)
             _otherUser.value = ChatUser(
-                id = otherUserId,
-                username = user?.username?.ifEmpty { user.email } ?: otherUserId,
+                id           = otherUserId,
+                username     = user?.username?.ifEmpty { user.email } ?: otherUserId,
                 profileImage = user?.profileImage ?: ""
             )
         }
 
-        fun loadMessages(otherUserId: String) {
-            val uid = authRepository.currentUser?.uid ?: return
-            _currentUserIdFlow.value = uid
-            activeChatUserId = otherUserId
+        viewModelScope.launch {
+            chatRepository.getMessages(uid, otherUserId).collect { msgs ->
+                val sorted = msgs.sortedBy { it.timestamp }
 
-            viewModelScope.launch {
-                val user = chatRepository.getUserData(otherUserId)
-                _otherUser.value = ChatUser(
-                    id = otherUserId,
-                    username = user?.username?.ifEmpty { user.email } ?: otherUserId,
-                    profileImage = user?.profileImage ?: ""
-                )
-            }
+                // Notificar solo mensajes realmente nuevos (no vistos antes)
+                val previousIds = _messages.value.map { it.id }.toSet()
+                val newMsgs = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
-            viewModelScope.launch {
-                chatRepository.getMessages(uid, otherUserId).collect { msgs ->
-                    val sorted = msgs.sortedBy { it.timestamp }
+                if (_messages.value.isNotEmpty() && newMsgs.isNotEmpty()) {
+                    val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                    } else true
 
-                    // Notificar solo mensajes realmente nuevos (no vistos antes)
-                    val previousIds = _messages.value.map { it.id }.toSet()
-                    val newMsgs = sorted.filter { it.id !in previousIds && it.senderId != uid }
-
-                    if (_messages.value.isNotEmpty() && newMsgs.isNotEmpty()) {
-                        val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            ContextCompat.checkSelfPermission(
-                                context, Manifest.permission.POST_NOTIFICATIONS
-                            ) == PackageManager.PERMISSION_GRANTED
-                        } else true
-
-                        if (canNotify) {
-                            newMsgs.forEach { msg ->
-                                NotificationHelper.showChatNotification(
-                                    context = context,
-                                    senderName = "Nuevo mensaje",
-                                    message = msg.content
-                                )
-                            }
+                    if (canNotify) {
+                        newMsgs.forEach { msg ->
+                            NotificationHelper.showChatNotification(
+                                context    = context,
+                                senderName = "Nuevo mensaje",
+                                message    = msg.content
+                            )
                         }
                     }
-
-                    _messages.value = sorted
                 }
+
+                _messages.value = sorted
             }
         }
+    }
 
-        fun sendMessage(otherUserId: String) {
-            val uid = authRepository.currentUser?.uid ?: return
-            val content = _messageInput.value.trim()
-            if (content.isEmpty()) return
-            viewModelScope.launch {
-                chatRepository.sendMessage(uid, otherUserId, content)
-                _messageInput.value = ""
-            }
+    fun sendMessage(otherUserId: String) {
+        val uid     = authRepository.currentUser?.uid ?: return
+        val content = _messageInput.value.trim()
+        if (content.isEmpty()) return
+        viewModelScope.launch {
+            chatRepository.sendMessage(uid, otherUserId, content)
+            _messageInput.value = ""
         }
+    }
 
-        fun markMessagesAsRead(otherUserId: String) {
-            val currentUid = authRepository.currentUser?.uid ?: return
-            viewModelScope.launch {
-                chatRepository.markMessagesAsRead(currentUid, otherUserId)
-            }
+    fun markMessagesAsRead(otherUserId: String) {
+        val currentUid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
     }
 }
