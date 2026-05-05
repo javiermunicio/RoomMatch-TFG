@@ -7,6 +7,7 @@ import com.example.roommatch_pmdm.data.repositories.ChatRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.ChatUser
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -68,7 +69,7 @@ class ChatListViewModel(
 class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
-    private val context: Context                   // ← añadido
+    private val context: Context
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -89,14 +90,15 @@ class ChatDetailViewModel(
 
     private val _otherUser = MutableStateFlow<ChatUser?>(null)
     val otherUser: StateFlow<ChatUser?> = _otherUser
-    private var activeChatUserId: String? = null
+
+    // Job para cancelar el collector anterior si se llama loadMessages de nuevo
+    private var messagesJob: Job? = null
 
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
-        activeChatUserId = otherUserId
 
         viewModelScope.launch {
             val user = chatRepository.getUserData(otherUserId)
@@ -107,31 +109,34 @@ class ChatDetailViewModel(
             )
         }
 
-        viewModelScope.launch {
+        // Cancelar collector anterior antes de crear uno nuevo
+        messagesJob?.cancel()
+        messagesJob = viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
-                val previous = _messages.value
-                val newMsgs  = msgs.filter { new ->
-                    previous.none { it.id == new.id }
-                }
-                if (previous.isNotEmpty()) {
-                    newMsgs.filter { it.senderId != uid }.forEach { msg ->
-                        val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            ContextCompat.checkSelfPermission(
-                                context, Manifest.permission.POST_NOTIFICATIONS
-                            ) == PackageManager.PERMISSION_GRANTED
-                        } else true
+                val sorted = msgs.sortedBy { it.timestamp }
 
-                        if (canNotify) {
+                val previousIds = _messages.value.map { it.id }.toSet()
+                val newMsgs = sorted.filter { it.id !in previousIds && it.senderId != uid }
+
+                if (_messages.value.isNotEmpty() && newMsgs.isNotEmpty()) {
+                    val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                    } else true
+
+                    if (canNotify) {
+                        newMsgs.forEach { msg ->
                             NotificationHelper.showChatNotification(
                                 context    = context,
-                                senderName = "Nuevo mensaje",
+                                senderName = _otherUser.value?.username ?: "Nuevo mensaje",
                                 message    = msg.content
                             )
                         }
                     }
                 }
 
-                _messages.value = msgs.sortedBy { it.timestamp }
+                _messages.value = sorted
             }
         }
     }
@@ -151,5 +156,10 @@ class ChatDetailViewModel(
         viewModelScope.launch {
             chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        messagesJob?.cancel()
     }
 }
