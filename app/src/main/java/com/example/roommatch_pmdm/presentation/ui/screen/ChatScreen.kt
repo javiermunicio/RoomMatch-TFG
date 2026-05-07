@@ -1,6 +1,7 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -189,7 +190,10 @@ fun ChatDetailScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.clickable {
+                            navController?.navigate(Screen.InterestedUserProfile.createRoute(chatUserId))
+                        }
                     ) {
                         Surface(
                             modifier = Modifier.size(38.dp),
