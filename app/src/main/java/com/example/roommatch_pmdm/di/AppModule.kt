@@ -35,7 +35,7 @@ val appModule = module {
     // ViewModels
     viewModel { LoginViewModel(get()) }
     viewModel { RegisterViewModel(get(), get()) }
-    viewModel { MatchingViewModel(get(), get(), androidContext()) }
+    viewModel { MatchingViewModel(get(), get(),get(), androidContext()) }
     viewModel { ChatListViewModel(get(), get(), get()) }
     viewModel { ChatDetailViewModel(get(), get(), androidContext()) }
     viewModel { ProfileViewModel(get(), get(), get()) }
