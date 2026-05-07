@@ -3,6 +3,7 @@ package com.example.roommatch_pmdm.presentation.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +27,14 @@ import com.example.roommatch_pmdm.domain.model.RoomPost
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.RoomPostListViewModel
 import org.koin.androidx.compose.koinViewModel
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.ui.unit.sp
+
 private val RoomBlue = Color(0xFF4A90D9)
 @Composable
 fun RoomPostListScreen(
@@ -283,68 +292,208 @@ fun RoomPostCard(
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Eliminar anuncio") },
-            text = { Text("¿Eliminar '${post.title}'?") },
+            text  = { Text("¿Eliminar '${post.title}'?") },
             confirmButton = {
                 Button(onClick = { onDelete(); showDialog = false }) { Text("Eliminar") }
             },
             dismissButton = {
-                Button(onClick = { showDialog = false }) { Text("Cancelar") }
+                OutlinedButton(onClick = { showDialog = false }) { Text("Cancelar") }
             }
         )
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },  // ← tap en toda la card
-        elevation = CardDefaults.cardElevation(4.dp)
+        modifier  = Modifier.fillMaxWidth().clickable { onClick() },
+        shape     = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors    = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    post.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                if (isOwner) {
-                    IconButton(onClick = { showDialog = true }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = Color.Red)
+        // ── Franja azul lateral + cabecera ────────────────────────────────
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // Borde azul izquierdo
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(IntrinsicSize.Max)  // ← se adapta a la altura del contenido
+                    .background(RoomBlue)
+            )
+
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp, vertical = 12.dp)) {
+
+                // Título + botón borrar
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.Top
+                ) {
+                    Text(
+                        text       = post.title,
+                        style      = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = Color(0xFF1A1A1A),
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)                    )
+                    if (isOwner) {
+                        IconButton(
+                            onClick  = { showDialog = true },
+                            modifier = Modifier.size(28.dp).offset(x = 4.dp, y = (-2).dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = "Eliminar",
+                                tint     = Color(0xFFE24B4A),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
-            }
 
-            Text("📍 ${post.address}, ${post.city}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            Text("💶 ${post.price}€/mes", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(2.dp))
 
-            if (post.description.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(post.description, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-            }
+                // Dirección
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint     = Color(0xFF888888),
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text  = "${post.address}, ${post.city}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF888888)
+                    )
+                }
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Precio en pill
+                Surface(
+                    color = Color(0xFFEBF4FF),
+                    shape = MaterialTheme.shapes.extraLarge
+                ) {
+                    Text(
+                        text       = "${post.price}€/mes",
+                        modifier   = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                        color      = Color(0xFF0C447C),
+                        fontSize   = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // Descripción (máx 2 líneas)
+                if (post.description.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text     = post.description,
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = Color(0xFF666666),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Chips de compañeros y fecha
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (post.roommates > 0) {
+                        InfoPill(
+                            icon  = Icons.Filled.Group,
+                            label = "${post.roommates} compañero${if (post.roommates != 1) "s" else ""}"
+                        )
+                    }
                     if (post.availableFrom.isNotEmpty()) {
-                        Text("Disponible desde: ${post.availableFrom}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        InfoPill(
+                            icon  = Icons.Filled.CalendarToday,
+                            label = "Desde ${post.availableFrom}"
+                        )
                     }
-                    Text("Publicado por: ${post.ownerName}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
-                // Indicador visual de "ver más"
+            }
+        }
+
+        // ── Footer ────────────────────────────────────────────────────────
+        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
+        Row(
+            modifier              = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            // Avatar + propietario
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.size(22.dp),
+                    shape    = CircleShape,
+                    color    = Color(0xFFEBF4FF)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text     = post.ownerName.take(2).uppercase(),
+                            fontSize = 9.sp,
+                            color    = Color(0xFF0C447C),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
                 Text(
-                    "Ver detalle →",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF4A90D9),
+                    text     = post.ownerName.ifEmpty { "Propietario" },
+                    style    = MaterialTheme.typography.labelSmall,
+                    color    = Color(0xFF888888)
+                )
+            }
+
+            // "Ver detalle →"
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text       = "Ver detalle",
+                    style      = MaterialTheme.typography.labelSmall,
+                    color      = RoomBlue,
                     fontWeight = FontWeight.SemiBold
                 )
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint     = RoomBlue,
+                    modifier = Modifier.size(13.dp)
+                )
             }
+        }
+    }
+}
+
+// ── Chip pequeño de información ───────────────────────────────────────────────
+@Composable
+private fun InfoPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String
+) {
+    Surface(
+        color = Color(0xFFF5F5F5),
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Row(
+            modifier          = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint     = RoomBlue,
+                modifier = Modifier.size(12.dp)
+            )
+            Text(
+                text     = label,
+                fontSize = 11.sp,
+                color    = Color(0xFF555555)
+            )
         }
     }
 }
