@@ -295,44 +295,6 @@ fun UserCardDisplay(
                         }
                     }
                 }
-
-                // Presupuesto
-                if (userCard.age > 0 || true) { // siempre mostramos la fila de info extra
-                    HorizontalDivider(color = Color(0xFFEEEEEE))
-                    // Fila: presupuesto (si existe en el modelo)
-                    // UserCard no tiene budget, solo mostramos lo disponible:
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment     = Alignment.CenterVertically,
-                        modifier              = Modifier.fillMaxWidth()
-                    ) {
-                        // Puedes añadir budget a UserCard; de momento mostramos un chip neutral
-                        Surface(
-                            color  = budgetBg,
-                            shape  = CircleShape,
-                            border = BorderStroke(0.5.dp, Color(0xFF97C459))
-                        ) {
-                            Row(
-                                modifier          = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Filled.EuroSymbol,
-                                    contentDescription = null,
-                                    tint     = budgetFg,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    "Busca piso compartido",
-                                    color    = budgetFg,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
             }
         }
     }
