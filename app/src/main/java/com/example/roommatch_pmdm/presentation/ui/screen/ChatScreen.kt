@@ -35,14 +35,11 @@ import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-// ── Colores de burbuja ────────────────────────────────────────────────────────
 private val BubbleMe    = Color(0xFF1E88E5)
 private val BubbleOther = Color(0xFFEEEEEE)
 private val TextMe      = Color.White
 private val TextOther   = Color(0xFF212121)
 
-// ── ChatListScreen ────────────────────────────────────────────────────────────
 @Composable
 fun ChatListScreen(
     navController: NavController,
@@ -50,11 +47,9 @@ fun ChatListScreen(
 ) {
     val chatUsers by viewModel.chatUsers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    LaunchedEffect(Unit) {
-        viewModel.refresh()
-    }
 
-    // También refresca en ON_RESUME del lifecycle
+    LaunchedEffect(Unit) { viewModel.refresh() }
+
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -164,7 +159,6 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
     }
 }
 
-// ── ChatDetailScreen ──────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailScreen(
@@ -176,7 +170,7 @@ fun ChatDetailScreen(
     val messageInput by viewModel.messageInput.collectAsState()
     val currentUid   by viewModel.currentUserIdFlow.collectAsState()
     val listState    = rememberLazyListState()
-    val otherUser by viewModel.otherUser.collectAsState()
+    val otherUser    by viewModel.otherUser.collectAsState()
 
     LaunchedEffect(chatUserId) {
         viewModel.loadMessages(chatUserId)
@@ -203,7 +197,7 @@ fun ChatDetailScreen(
                             color    = Color(0xFFDDDDDD)
                         ) {
                             AsyncImage(
-                                model              = otherUser?.profileImage
+                                model = otherUser?.profileImage
                                     ?.ifEmpty { "https://via.placeholder.com/38" }
                                     ?: "https://via.placeholder.com/38",
                                 contentDescription = null,
@@ -278,8 +272,8 @@ fun ChatDetailScreen(
                     maxLines      = 4
                 )
                 IconButton(
-                    onClick  = { viewModel.sendMessage(chatUserId) },
-                    enabled  = messageInput.isNotBlank()
+                    onClick = { viewModel.sendMessage(chatUserId) },
+                    enabled = messageInput.isNotBlank()
                 ) {
                     Icon(
                         imageVector        = Icons.AutoMirrored.Filled.Send,
@@ -292,7 +286,6 @@ fun ChatDetailScreen(
     }
 }
 
-// ── Burbuja ───────────────────────────────────────────────────────────────────
 @Composable
 fun MessageBubble(message: ChatMessage, currentUserId: String) {
     val isMine = currentUserId.isNotEmpty() && message.senderId == currentUserId
@@ -334,7 +327,6 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
             }
 
             if (timeText.isNotEmpty()) {
-                // AQUÍ ESTÁ EL CAMBIO 2: Fila para agrupar la hora y los checks
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -344,17 +336,13 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
                         fontSize = 10.sp,
                         color    = Color.Gray
                     )
-
-                    // Si el mensaje es mío, muestro los checks
                     if (isMine) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            // message.isRead debe existir en tu modelo ChatMessage
-                            imageVector = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Check,
+                            imageVector        = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Check,
                             contentDescription = if (message.isRead) "Leído" else "Enviado",
-                            modifier = Modifier.size(14.dp),
-                            // Azul si lo ha leído, gris si solo está enviado
-                            tint = if (message.isRead) Color(0xFF1E88E5) else Color.Gray
+                            modifier           = Modifier.size(14.dp),
+                            tint               = if (message.isRead) Color(0xFF1E88E5) else Color.Gray
                         )
                     }
                 }

@@ -22,11 +22,12 @@ fun HomeScreen(navController: NavController) {
     val currentRoute = currentBackStackEntry?.destination?.route
 
     val tabs = listOf(
-        Triple("Inicio",  Icons.Filled.Home,        Screen.Matching.route),
-        Triple("Pisos",   Icons.Filled.Search,      Screen.AddRooms.route),
-        Triple("Chats",   Icons.Filled.ChatBubble,  Screen.ChatList.route),
-        Triple("Perfil",  Icons.Filled.Person,      Screen.Profile.route)
+        Triple("Inicio", Icons.Filled.Home,       Screen.Matching.route),
+        Triple("Pisos",  Icons.Filled.Search,     Screen.AddRooms.route),
+        Triple("Chats",  Icons.Filled.ChatBubble, Screen.ChatList.route),
+        Triple("Perfil", Icons.Filled.Person,     Screen.Profile.route)
     )
+
     val selectedTab = when {
         currentRoute == Screen.Matching.route -> 0
         currentRoute?.startsWith("addRooms") == true ||
@@ -99,13 +100,15 @@ fun HomeScreen(navController: NavController) {
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 InterestedUsersProfileScreen(userId = userId, navController = innerNavController)
             }
+            // ── CHAT: todo con innerNavController ──────────────────────────
             composable(Screen.ChatList.route) {
-                ChatListScreen(navController = navController)
+                ChatListScreen(navController = innerNavController)
             }
             composable(Screen.ChatDetail.route) { backStackEntry ->
                 val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
                 ChatDetailScreen(chatUserId = chatUserId, navController = innerNavController)
             }
+            // ── PERFIL: logout navega al Login externo ─────────────────────
             composable(Screen.Profile.route) {
                 ProfileScreen(navController = navController)
             }
