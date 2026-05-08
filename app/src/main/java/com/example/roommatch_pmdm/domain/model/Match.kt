@@ -18,6 +18,7 @@ data class UserCard(
     val username: String = "",
     val profileImage: String = "",
     val age: Int = 0,
+    val budget: Int = 0,
     val location: String = "",
     val bio: String = "",
     val habits: List<String> = emptyList(),
