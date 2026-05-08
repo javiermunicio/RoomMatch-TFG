@@ -38,6 +38,16 @@ import com.example.roommatch_pmdm.domain.model.UserCard
 import com.example.roommatch_pmdm.presentation.ui.components.swipeableCard
 import com.example.roommatch_pmdm.presentation.viewmodel.MatchingViewModel
 import org.koin.androidx.compose.koinViewModel
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.EuroSymbol
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.ui.draw.drawBehind
 
 @Composable
 fun MatchingScreen(navController: androidx.navigation.NavController? = null, viewModel: MatchingViewModel = koinViewModel()) {
@@ -122,13 +132,19 @@ fun UserCardDisplay(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit
 ) {
+    val cardBlue    = Color(0xFF4A90D9)
+    val chipPinkBg  = Color(0xFFFBEAF0)
+    val chipPinkFg  = Color(0xFF993556)
+    val chipBlueBg  = Color(0xFFE6F1FB)
+    val chipBlueFg  = Color(0xFF185FA5)
+    val budgetBg    = Color(0xFFEAF3DE)
+    val budgetFg    = Color(0xFF3B6D11)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(450.dp)
-            // Añadimos el modificador aquí
             .swipeableCard(
-                onSwipeLeft = onSwipeLeft,
+                onSwipeLeft  = onSwipeLeft,
                 onSwipeRight = onSwipeRight
             ),
         shape = MaterialTheme.shapes.large,
@@ -137,51 +153,162 @@ fun UserCardDisplay(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-        // ... (El resto de tu código para mostrar la imagen, nombre, etc. se queda igual)
         Column {
-            AsyncImage(
-                model = userCard.profileImage.ifEmpty { "https://via.placeholder.com/400x300" },
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp),
-                contentScale = ContentScale.Crop
-            )
 
-            Column(
+            // ── Foto + nombre superpuesto ─────────────────────────────────
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .height(260.dp)
             ) {
-                Text(
-                    "${userCard.username}, ${userCard.age}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                AsyncImage(
+                    model        = userCard.profileImage.ifEmpty { "https://via.placeholder.com/400x260" },
+                    contentDescription = "${userCard.username}, ${userCard.age}",
+                    modifier     = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
                 Text(
                     "📍 ${userCard.location}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Nombre + ubicación encima del gradiente
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 14.dp, end = 16.dp)
                 ) {
-                    userCard.habits.forEach { habit ->
-                        AssistChip(
-                            onClick = {},
-                            label = { Text(habit, fontSize = 12.sp) }
+                    val displayAge = if (userCard.age > 0) ", ${userCard.age}" else ""
+                    Text(
+                        text       = "${userCard.username}$displayAge",
+                        color      = Color.White,
+                        fontSize   = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (userCard.location.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier          = Modifier.padding(top = 2.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.LocationOn,
+                                contentDescription = null,
+                                tint     = Color.White.copy(alpha = 0.9f),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text     = " ${userCard.location}",
+                                color    = Color.White.copy(alpha = 0.9f),
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Cuerpo de la tarjeta ──────────────────────────────────────
+            Column(
+                modifier            = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+
+                // Bio
+                if (userCard.bio.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .drawBehind { /* borde izquierdo azul */ }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .height(IntrinsicSize.Min)
+                                .background(cardBlue, shape = RoundedCornerShape(2.dp))
                         )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text       = userCard.bio,
+                            fontSize   = 13.sp,
+                            color      = Color(0xFF555555),
+                            lineHeight = 19.sp,
+                            maxLines   = 3,
+                            overflow   = TextOverflow.Ellipsis
+                        )
+                    }
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                }
+
+                // Hábitos / Personalidad
+                if (userCard.habits.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            "Personalidad",
+                            fontSize    = 11.sp,
+                            fontWeight  = FontWeight.Medium,
+                            color       = Color(0xFF999999),
+                            letterSpacing = 0.06.sp
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement   = Arrangement.spacedBy(6.dp)
+                        ) {
+                            userCard.habits.forEach { habit ->
+                                Surface(
+                                    color  = chipPinkBg,
+                                    shape  = CircleShape,
+                                    border = BorderStroke(0.5.dp, Color(0xFFED93B1))
+                                ) {
+                                    Text(
+                                        text     = habit,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        color    = chipPinkFg,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Preferencias
+                if (userCard.preferences.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            "Preferencias",
+                            fontSize    = 11.sp,
+                            fontWeight  = FontWeight.Medium,
+                            color       = Color(0xFF999999),
+                            letterSpacing = 0.06.sp
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement   = Arrangement.spacedBy(6.dp)
+                        ) {
+                            userCard.preferences.forEach { pref ->
+                                Surface(
+                                    color  = chipBlueBg,
+                                    shape  = CircleShape,
+                                    border = BorderStroke(0.5.dp, Color(0xFF85B7EB))
+                                ) {
+                                    Text(
+                                        text     = pref,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        color    = chipBlueFg,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
-
 @Composable
 fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: androidx.navigation.NavController? = null) {
     val primaryBlue   = Color(0xFF1E88E5)

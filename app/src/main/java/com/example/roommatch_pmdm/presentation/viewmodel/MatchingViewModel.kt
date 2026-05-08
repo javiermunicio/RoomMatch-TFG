@@ -9,15 +9,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
+import com.example.roommatch_pmdm.data.repositories.UserRepository
+import com.example.roommatch_pmdm.domain.model.User
 import com.example.roommatch_pmdm.domain.model.UserCard
 import com.example.roommatch_pmdm.notifications.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 class MatchingViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
+    private val userRepository: UserRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -43,8 +47,10 @@ class MatchingViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                val currentUser = userRepository.getUser(currentUserId).getOrNull()
+
                 val users = matchRepository.getUsersToSwipe(currentUserId)
-                _userCards.value = users.map { user ->
+                val cards = users.map { user ->
                     UserCard(
                         id           = user.id,
                         username     = user.username,
@@ -56,10 +62,68 @@ class MatchingViewModel(
                         preferences  = user.preferences
                     )
                 }
+
+                _userCards.value = if (currentUser == null) {
+                    cards
+                } else {
+                    cards
+                        .map { card ->
+                            val score = computeCompatibilityScore(
+                                currentUser = currentUser,
+                                candidate   = users.first { it.id == card.id }
+                            )
+                            card to score
+                        }
+                        .sortedByDescending { (_, score) -> score }
+                        .map { (card, _) -> card }
+                }
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    /**
+     * Puntuación de compatibilidad entre el usuario actual y un candidato.
+     *
+     * | Criterio                          | Puntos |
+     * |-----------------------------------|--------|
+     * | Misma ciudad                      |   10   |
+     * | Cada hábito en común              |    3   |
+     * | Presupuesto dentro de ±200 €      |    5   |
+     * | Presupuesto dentro de ±500 €      |    2   |
+     * | Perfil completo (bio + foto)      |    2   |
+     */
+    private fun computeCompatibilityScore(currentUser: User, candidate: User): Int {
+        var score = 0
+
+        // ── Ciudad ────────────────────────────────────────────────────────────
+        if (currentUser.location.isNotBlank() &&
+            candidate.location.equals(currentUser.location, ignoreCase = true)
+        ) {
+            score += 10
+        }
+
+        // ── Hábitos en común ─────────────────────────────────────────────────
+        val commonHabits = candidate.habits.count { it in currentUser.habits }
+        score += commonHabits * 3
+
+        // ── Presupuesto similar ───────────────────────────────────────────────
+        if (currentUser.budget > 0 && candidate.budget > 0) {
+            val budgetDiff = abs(currentUser.budget - candidate.budget)
+            score += when {
+                budgetDiff <= 200 -> 5
+                budgetDiff <= 500 -> 2
+                else              -> 0
+            }
+        }
+
+        // ── Perfil completo (bio + foto) ──────────────────────────────────────
+        if (candidate.bio.isNotBlank() && candidate.profileImage.isNotBlank()) {
+            score += 2
+        }
+
+        return score
     }
 
     fun onLike() {

@@ -182,7 +182,7 @@ private fun StepOne(viewModel: OnboardingViewModel) {
 
     OutlinedTextField(
         value = username,
-        onValueChange = { viewModel.username.value = it },
+        onValueChange = { viewModel.onUsernameChanged(it) },
         label = { Text("¿Cómo te llamas?") },
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -198,7 +198,7 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
 
     OutlinedTextField(
         value = age,
-        onValueChange = { viewModel.age.value = it },
+        onValueChange = { viewModel.onAgeChanged(it) },
         label = { Text("Edad") },
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         shape = MaterialTheme.shapes.large,
@@ -206,7 +206,7 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
     )
     OutlinedTextField(
         value = city,
-        onValueChange = { viewModel.city.value = it },
+        onValueChange = { viewModel.onCityChanged(it) },
         label = { Text("Ciudad") },
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         shape = MaterialTheme.shapes.large,
@@ -214,7 +214,7 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
     )
     OutlinedTextField(
         value = bio,
-        onValueChange = { viewModel.bio.value = it },
+        onValueChange = { viewModel.onBioChanged(it) },
         label = { Text("Cuéntanos algo sobre ti") },
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,

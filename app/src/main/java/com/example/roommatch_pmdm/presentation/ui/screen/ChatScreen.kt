@@ -1,6 +1,7 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,14 +37,11 @@ import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-// ── Colores de burbuja ────────────────────────────────────────────────────────
 private val BubbleMe    = Color(0xFF1E88E5)
 private val BubbleOther @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 private val TextMe @Composable get() = MaterialTheme.colorScheme.onPrimary
 private val TextOther @Composable get() = MaterialTheme.colorScheme.onSurface
 
-// ── ChatListScreen ────────────────────────────────────────────────────────────
 @Composable
 fun ChatListScreen(
     navController: NavController,
@@ -59,7 +57,8 @@ fun ChatListScreen(
         viewModel.refresh()
     }
 
-    // También refresca en ON_RESUME del lifecycle
+    LaunchedEffect(Unit) { viewModel.refresh() }
+
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -222,7 +221,6 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
     }
 }
 
-// ── ChatDetailScreen ──────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailScreen(
@@ -234,7 +232,7 @@ fun ChatDetailScreen(
     val messageInput by viewModel.messageInput.collectAsState()
     val currentUid   by viewModel.currentUserIdFlow.collectAsState()
     val listState    = rememberLazyListState()
-    val otherUser by viewModel.otherUser.collectAsState()
+    val otherUser    by viewModel.otherUser.collectAsState()
 
     LaunchedEffect(chatUserId) {
         viewModel.loadMessages(chatUserId)
@@ -253,7 +251,10 @@ fun ChatDetailScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.clickable {
+                            navController?.navigate(Screen.InterestedUserProfile.createRoute(chatUserId))
+                        }
                     ) {
                         Surface(
                             modifier = Modifier.size(38.dp),
@@ -261,7 +262,7 @@ fun ChatDetailScreen(
                             color = MaterialTheme.colorScheme.outline
                         ) {
                             AsyncImage(
-                                model              = otherUser?.profileImage
+                                model = otherUser?.profileImage
                                     ?.ifEmpty { "https://via.placeholder.com/38" }
                                     ?: "https://via.placeholder.com/38",
                                 contentDescription = null,
@@ -336,8 +337,8 @@ fun ChatDetailScreen(
                     maxLines      = 4
                 )
                 IconButton(
-                    onClick  = { viewModel.sendMessage(chatUserId) },
-                    enabled  = messageInput.isNotBlank()
+                    onClick = { viewModel.sendMessage(chatUserId) },
+                    enabled = messageInput.isNotBlank()
                 ) {
                     Icon(
                         imageVector        = Icons.AutoMirrored.Filled.Send,
@@ -350,7 +351,6 @@ fun ChatDetailScreen(
     }
 }
 
-// ── Burbuja ───────────────────────────────────────────────────────────────────
 @Composable
 fun MessageBubble(message: ChatMessage, currentUserId: String) {
     val isMine = currentUserId.isNotEmpty() && message.senderId == currentUserId
@@ -392,7 +392,6 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
             }
 
             if (timeText.isNotEmpty()) {
-                // AQUÍ ESTÁ EL CAMBIO 2: Fila para agrupar la hora y los checks
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -402,13 +401,10 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
-
-                    // Si el mensaje es mío, muestro los checks
                     if (isMine) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            // message.isRead debe existir en tu modelo ChatMessage
-                            imageVector = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Check,
+                            imageVector        = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Check,
                             contentDescription = if (message.isRead) "Leído" else "Enviado",
                             modifier = Modifier.size(14.dp),
                             // Azul si lo ha leído, gris si solo está enviado

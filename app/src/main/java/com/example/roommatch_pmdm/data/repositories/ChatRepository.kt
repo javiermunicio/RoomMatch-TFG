@@ -14,11 +14,9 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
     private val messagesCollection = firestore.collection("messages")
     private val usersCollection    = firestore.collection("users")
 
-    // ID de conversación determinista
     fun conversationId(uid1: String, uid2: String): String =
         if (uid1 < uid2) "${uid1}_${uid2}" else "${uid2}_${uid1}"
 
-    // Escucha mensajes en tiempo real
     fun getMessages(currentUserId: String, otherUserId: String): Flow<List<ChatMessage>> =
         callbackFlow {
             val convId = conversationId(currentUserId, otherUserId)
@@ -27,26 +25,23 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
                 .collection("msgs")
                 .orderBy("timestamp", FirestoreQuery.Direction.ASCENDING)
                 .addSnapshotListener { snap, error ->
-                    if (error != null) { close(error); return@addSnapshotListener }
+                    if (error != null) {
+                        println("Error getMessages: ${error.message}")
+                        return@addSnapshotListener
+                    }
                     val msgs = snap?.documents?.mapNotNull {
                         it.toObject(ChatMessage::class.java)
-                    } ?: emptyList()
+                    }?.sortedBy { it.timestamp } ?: emptyList()
+
                     trySend(msgs)
                 }
             awaitClose { listener.remove() }
         }
 
-    /**
-     * Envía un mensaje y garantiza que el documento raíz de la conversación
-     * tenga el campo "participants" con los dos UIDs.
-     * Esto permite consultar conversaciones por participante de forma fiable,
-     * sin depender de parsear el ID del documento.
-     */
     suspend fun sendMessage(currentUserId: String, otherUserId: String, content: String) {
         val convId  = conversationId(currentUserId, otherUserId)
         val convRef = messagesCollection.document(convId)
 
-        // Crear el documento raíz con participantes si no existe aún
         val convSnap = convRef.get().await()
         if (!convSnap.exists()) {
             convRef.set(
@@ -65,7 +60,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
         convRef.collection("msgs").document(msg.id).set(msg).await()
     }
 
-    // Obtiene los datos de usuario
     suspend fun getUserData(userId: String): User? =
         usersCollection.document(userId).get().await().toObject(User::class.java)
 
@@ -76,7 +70,9 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             .orderBy("timestamp", FirestoreQuery.Direction.DESCENDING)
             .limit(1)
             .get().await()
-        return snap.documents.firstOrNull()?.toObject(ChatMessage::class.java)
+        return snap.documents.mapNotNull {
+            it.toObject(ChatMessage::class.java)
+        }.maxByOrNull { it.timestamp }
     }
 
     // Escucha en tiempo real el último mensaje de una conversación
@@ -126,11 +122,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
         }
     }
 
-    /**
-     * Devuelve los IDs de todos los usuarios con los que [currentUserId]
-     * tiene una conversación activa, usando el campo "participants".
-     * Funciona tanto si hay match como si el chat fue iniciado directamente.
-     */
     suspend fun getActiveConversationUserIds(currentUserId: String): List<String> {
         return try {
             val snap = messagesCollection

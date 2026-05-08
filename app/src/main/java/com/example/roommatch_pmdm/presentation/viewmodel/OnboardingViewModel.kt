@@ -20,17 +20,29 @@ class OnboardingViewModel(
     val step = MutableStateFlow(1) // 1, 2 o 3
     val stepError = MutableStateFlow<String?>(null)
 
-    val username        = MutableStateFlow("")
-    val age             = MutableStateFlow("")
-    val city            = MutableStateFlow("")
-    val bio             = MutableStateFlow("")
-    val selectedHabits  = MutableStateFlow<List<String>>(emptyList())
-    val profileImageUrl = MutableStateFlow("")
+    private val _username = MutableStateFlow("")
+    val username: StateFlow<String> = _username
 
-    val isLoading        = MutableStateFlow(false)
+    private val _age = MutableStateFlow("")
+    val age: StateFlow<String> = _age
+
+    private val _city = MutableStateFlow("")
+    val city: StateFlow<String> = _city
+
+    private val _bio = MutableStateFlow("")
+    val bio: StateFlow<String> = _bio
+
+    private val _selectedHabits = MutableStateFlow<List<String>>(emptyList())
+    val selectedHabits: StateFlow<List<String>> = _selectedHabits
+
+    private val _profileImageUrl = MutableStateFlow("")
+    val profileImageUrl: StateFlow<String> = _profileImageUrl
+
+
+    val isLoading = MutableStateFlow(false)
     val isUploadingImage = MutableStateFlow(false)
-    val isDone           = MutableStateFlow(false)
-    val errorMessage     = MutableStateFlow<String?>(null)
+    val isDone = MutableStateFlow(false)
+    val errorMessage = MutableStateFlow<String?>(null)
 
     val availableHabits = listOf(
         "Madrugador", "Noctámbulo", "Ordenado", "Tranquilo",
@@ -38,19 +50,37 @@ class OnboardingViewModel(
         "Con mascotas", "Vegetariano", "Músico", "Gamer"
     )
 
-    fun toggleHabit(habit: String) {
-        selectedHabits.value = if (habit in selectedHabits.value)
-            selectedHabits.value - habit
-        else
-            selectedHabits.value + habit
+    fun onUsernameChanged(v: String) {
+        _username.value = v
     }
+
+    fun onAgeChanged(v: String) {
+        _age.value = v
+    }
+
+    fun onCityChanged(v: String) {
+        _city.value = v
+    }
+
+    fun onBioChanged(v: String) {
+        _bio.value = v
+    }
+
+
+    fun toggleHabit(habit: String) {
+        _selectedHabits.value = if (habit in _selectedHabits.value)
+            _selectedHabits.value - habit
+        else
+            _selectedHabits.value + habit
+    }
+
 
     fun uploadImage(uri: Uri) {
         viewModelScope.launch {
             isUploadingImage.value = true
             storageRepository.uploadProfileImage(uri).fold(
-                onSuccess  = { profileImageUrl.value = it },
-                onFailure  = { errorMessage.value = "Error al subir la imagen" }
+                onSuccess = { _profileImageUrl.value = it },
+                onFailure = { errorMessage.value = "Error al subir la imagen" }
             )
             isUploadingImage.value = false
         }
@@ -58,52 +88,49 @@ class OnboardingViewModel(
 
     fun nextStep() {
         when (step.value) {
-            1 -> {
-                if (username.value.isBlank()) {
-                    stepError.value = "El nombre es obligatorio"
-                    return
-                }
+            1 -> if (_username.value.isBlank()) {
+                stepError.value = "El nombre es obligatorio"; return
             }
+
             2 -> {
-                if (age.value.isBlank()) {
-                    stepError.value = "La edad es obligatoria"
-                    return
+                if (_age.value.isBlank()) {
+                    stepError.value = "La edad es obligatoria"; return
                 }
-                val ageInt = age.value.toIntOrNull()
+                val ageInt = _age.value.toIntOrNull()
                 if (ageInt == null || ageInt < 18 || ageInt > 99) {
-                    stepError.value = "La edad debe estar entre 18 y 99 años"
-                    return
+                    stepError.value = "La edad debe estar entre 18 y 99 años"; return
                 }
-                if (city.value.isBlank()) {
-                    stepError.value = "La ciudad es obligatoria"
-                    return
+                if (_city.value.isBlank()) {
+                    stepError.value = "La ciudad es obligatoria"; return
                 }
             }
         }
         stepError.value = null
         if (step.value < 3) step.value++
-    }    fun prevStep() { if (step.value > 1) step.value-- }
+    }
+    fun prevStep() {
+        if (step.value > 1)
+            step.value-- }
 
     fun finish() {
-        if (selectedHabits.value.isEmpty()) {
-            stepError.value = "Selecciona al menos un rasgo"
-            return
+        if (_selectedHabits.value.isEmpty()) {
+            stepError.value = "Selecciona al menos un rasgo"; return
         }
         stepError.value = null
         val userId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             isLoading.value = true
             val user = User(
-                id           = userId,
-                username     = username.value.trim(),
-                email        = authRepository.currentUser?.email ?: "",
-                age          = age.value.toIntOrNull() ?: 0,
-                location     = city.value.trim(),
-                bio          = bio.value.trim(),
-                profileImage = profileImageUrl.value,
-                habits       = selectedHabits.value,
-                createdAt    = System.currentTimeMillis(),
-                updatedAt    = System.currentTimeMillis()
+                id = userId,
+                username = _username.value.trim(),
+                email = authRepository.currentUser?.email ?: "",
+                age = _age.value.toIntOrNull() ?: 0,
+                location = _city.value.trim(),
+                bio = _bio.value.trim(),
+                profileImage = _profileImageUrl.value,
+                habits = _selectedHabits.value,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
             )
             userRepository.saveUser(user).fold(
                 onSuccess = { isDone.value = true },
