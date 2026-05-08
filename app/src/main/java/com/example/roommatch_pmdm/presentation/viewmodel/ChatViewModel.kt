@@ -9,6 +9,7 @@ import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import android.Manifest
 import android.content.Context
@@ -38,23 +39,53 @@ class ChatListViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                // Obtener todos los usuarios con los que hay conversación
                 val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
-                val activeIds = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
+                val activeIds  = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
                 val allUserIds = (matchedIds + activeIds).toList()
 
-                _chatUsers.value = allUserIds.mapNotNull { userId ->
-                    val user    = chatRepository.getUserData(userId)
-                    val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
-                    ChatUser(
-                        id           = userId,
-                        username     = user?.username?.ifEmpty { user.email } ?: userId,
-                        profileImage = user?.profileImage ?: "",
-                        lastMessage  = lastMsg?.content ?: "Toca para chatear",
-                        timestamp    = lastMsg?.timestamp ?: 0L,
-                        isRead       = lastMsg?.isRead ?: true
-                    )
-                }.sortedByDescending { it.timestamp }
-            } finally {
+                // Para cada usuario, construir un Flow reactivo del último mensaje
+                // y combinarlo en una lista actualizada en tiempo real
+                if (allUserIds.isEmpty()) {
+                    _isLoading.value = false
+                    return@launch
+                }
+
+                // Creamos un flow por usuario y los combinamos
+                val flows = allUserIds.map { userId ->
+                    chatRepository.getLastMessageFlow(currentUserId, userId)
+                        .combine(
+                            chatRepository.getUnreadCountFlow(currentUserId, userId)
+                        ) { lastMsg, unreadCount ->
+                            Triple(userId, lastMsg, unreadCount)
+                        }
+                }
+
+                // Combinamos todos los flows en uno solo
+                kotlinx.coroutines.flow.combine(flows) { triples ->
+                    triples.mapNotNull { (userId, lastMsg, unreadCount) ->
+                        val user = chatRepository.getUserData(userId) ?: return@mapNotNull null
+                        ChatUser(
+                            id                   = userId,
+                            username             = user.username.ifEmpty { user.email },
+                            profileImage         = user.profileImage,
+                            lastMessage          = lastMsg?.content ?: "Toca para chatear",
+                            timestamp            = lastMsg?.timestamp ?: 0L,
+                            // isRead desde perspectiva del receptor (yo)
+                            // Si el último mensaje me lo enviaron a mí y no está leído → false
+                            isRead               = if (lastMsg?.recipientId == currentUserId)
+                                lastMsg.isRead
+                            else true,
+                            lastMessageSenderId  = lastMsg?.senderId ?: ""
+                        )
+                    }.sortedByDescending { it.timestamp }
+                }.collect { users ->
+                    _chatUsers.value = users
+                    _isLoading.value = false
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
                 _isLoading.value = false
             }
         }

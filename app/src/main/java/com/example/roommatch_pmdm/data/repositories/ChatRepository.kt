@@ -3,7 +3,7 @@ package com.example.roommatch_pmdm.data.repositories
 import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.User
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Query as FirestoreQuery
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -25,7 +25,7 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             val listener = messagesCollection
                 .document(convId)
                 .collection("msgs")
-                .orderBy("timestamp", Query.Direction.ASCENDING)
+                .orderBy("timestamp", FirestoreQuery.Direction.ASCENDING)
                 .addSnapshotListener { snap, error ->
                     if (error != null) { close(error); return@addSnapshotListener }
                     val msgs = snap?.documents?.mapNotNull {
@@ -69,15 +69,44 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
     suspend fun getUserData(userId: String): User? =
         usersCollection.document(userId).get().await().toObject(User::class.java)
 
-    // Obtiene el último mensaje de una conversación
+    // Obtiene el último mensaje de una conversación (one-shot)
     suspend fun getLastMessage(currentUserId: String, otherUserId: String): ChatMessage? {
         val convId = conversationId(currentUserId, otherUserId)
         val snap = messagesCollection.document(convId).collection("msgs")
-            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .orderBy("timestamp", FirestoreQuery.Direction.DESCENDING)
             .limit(1)
             .get().await()
         return snap.documents.firstOrNull()?.toObject(ChatMessage::class.java)
     }
+
+    // Escucha en tiempo real el último mensaje de una conversación
+    fun getLastMessageFlow(currentUserId: String, otherUserId: String): Flow<ChatMessage?> =
+        callbackFlow {
+            val convId = conversationId(currentUserId, otherUserId)
+            val listener = messagesCollection.document(convId).collection("msgs")
+                .orderBy("timestamp", FirestoreQuery.Direction.DESCENDING)
+                .limit(1)
+                .addSnapshotListener { snap, error ->
+                    if (error != null) { close(error); return@addSnapshotListener }
+                    val msg = snap?.documents?.firstOrNull()?.toObject(ChatMessage::class.java)
+                    trySend(msg)
+                }
+            awaitClose { listener.remove() }
+        }
+
+    // Cuenta mensajes no leídos que me enviaron
+    fun getUnreadCountFlow(currentUserId: String, otherUserId: String): Flow<Int> =
+        callbackFlow {
+            val convId = conversationId(currentUserId, otherUserId)
+            val listener = messagesCollection.document(convId).collection("msgs")
+                .whereEqualTo("recipientId", currentUserId)
+                .whereEqualTo("isRead", false)
+                .addSnapshotListener { snap, error ->
+                    if (error != null) { close(error); return@addSnapshotListener }
+                    trySend(snap?.size() ?: 0)
+                }
+            awaitClose { listener.remove() }
+        }
 
     suspend fun markMessagesAsRead(currentUserId: String, otherUserId: String) {
         try {

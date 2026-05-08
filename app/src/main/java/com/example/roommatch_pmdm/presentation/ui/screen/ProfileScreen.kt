@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,8 +38,8 @@ import androidx.compose.material.icons.filled.CameraAlt
 private val RoomBlue  = Color(0xFF4A90D9)
 private val RoomRed   = Color(0xFFF26B6B)
 private val ChipColor = Color(0xFFEF7F7F)
-private val BgGray    = Color(0xFFF5F5F5)
-private val TextGray  = Color(0xFF888888)
+// MaterialTheme.colorScheme.surfaceVariant replaced by MaterialTheme.colorScheme.surfaceVariant
+// MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) replaced by MaterialTheme.colorScheme.onSurface.copy(alpha=0.6f)
 
 @Composable
 fun ProfileScreen(
@@ -86,7 +87,7 @@ fun ProfileScreen(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                }) { Text("Cerrar sesión", color = Color.Red) }
+                }) { Text("Cerrar sesión", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) { Text("Cancelar") }
@@ -97,13 +98,13 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BgGray)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
         // --- Header ---
         Surface(
             modifier       = Modifier.fillMaxWidth(),
-            color          = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shadowElevation = 2.dp
         ) {
             Column(
@@ -134,7 +135,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .size(120.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFDDDDDD))
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                         .border(3.dp, RoomBlue, CircleShape)
                         .clickable { if (isEditing) imagePickerLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center
@@ -156,14 +157,14 @@ fun ProfileScreen(
                             if (isUploadingImage) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(28.dp),
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.surface,
                                     strokeWidth = 2.dp
                                 )
                             } else {
                                 Icon(
                                     imageVector = Icons.Filled.CameraAlt,
                                     contentDescription = "Cambiar foto",
-                                    tint = Color.White,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(32.dp)
                                 )
                             }
@@ -187,8 +188,8 @@ fun ProfileScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier          = Modifier.padding(top = 4.dp)
                     ) {
-                        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = TextGray, modifier = Modifier.size(14.dp))
-                        Text(text = location, style = MaterialTheme.typography.bodySmall, color = TextGray, modifier = Modifier.padding(start = 2.dp))
+                        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                        Text(text = location, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.padding(start = 2.dp))
                     }
                 }
             }
@@ -198,7 +199,7 @@ fun ProfileScreen(
         errorMessage?.let { msg ->
             Text(
                 text     = msg,
-                color    = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 style    = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
             )
@@ -209,7 +210,7 @@ fun ProfileScreen(
         // --- Chips de hábitos / rasgos ---
         Surface(
             modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            color           = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shape           = MaterialTheme.shapes.medium,
             shadowElevation = 1.dp
         ) {
@@ -218,7 +219,7 @@ fun ProfileScreen(
                     "Rasgos de personalidad",
                     style      = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color      = TextGray,
+                    color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier   = Modifier.padding(bottom = 12.dp)
                 )
 
@@ -268,7 +269,7 @@ fun ProfileScreen(
         if (isEditing) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                color           = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shape           = MaterialTheme.shapes.medium,
                 shadowElevation = 1.dp
             ) {
@@ -297,7 +298,7 @@ fun ProfileScreen(
             enabled  = !isLoading
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(22.dp), color = MaterialTheme.colorScheme.surface, strokeWidth = 2.dp)
             } else {
                 Text(
                     text       = if (isEditing) "Guardar cambios" else "Editar Perfil",
@@ -318,11 +319,11 @@ private fun TraitChip(label: String, editable: Boolean, onRemove: () -> Unit) {
             modifier          = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = label, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(text = label, color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             if (editable) {
                 Spacer(modifier = Modifier.width(4.dp))
                 IconButton(onClick = onRemove, modifier = Modifier.size(18.dp)) {
-                    Icon(Icons.Filled.Close, contentDescription = "Eliminar $label", tint = Color.White, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Filled.Close, contentDescription = "Eliminar $label", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(12.dp))
                 }
             }
         }

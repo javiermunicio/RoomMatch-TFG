@@ -28,5 +28,7 @@ data class ChatUser(
     val profileImage: String = "",
     val lastMessage: String = "",
     val timestamp: Long = 0,
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    // UID de quien envió el último mensaje (para saber si fui yo o el otro)
+    val lastMessageSenderId: String = ""
 )
