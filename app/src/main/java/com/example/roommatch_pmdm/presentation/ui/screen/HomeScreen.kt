@@ -6,20 +6,28 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.roommatch_pmdm.ThemeViewModel
 import com.example.roommatch_pmdm.presentation.navigation.Screen
+import androidx.activity.compose.LocalActivity
+import org.koin.androidx.viewmodel.ext.android.getViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
     val innerNavController = rememberNavController()
     val currentBackStackEntry by innerNavController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
+
+    // Obtiene el mismo ThemeViewModel que usa MainActivity (scope de Activity)
+    val activity = LocalActivity.current as androidx.activity.ComponentActivity
+    val themeViewModel: ThemeViewModel = activity.getViewModel()
+    val isDark by themeViewModel.isDarkTheme.collectAsState()
 
     val tabs = listOf(
         Triple("Inicio", Icons.Filled.Home,       Screen.Matching.route),
@@ -41,10 +49,29 @@ fun HomeScreen(navController: NavController) {
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("RoomMatch") },
+                actions = {
+                    // Dark/Light mode toggle button
+                    IconButton(onClick = { themeViewModel.toggleTheme() }) {
+                        Icon(
+                            imageVector = if (isDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                            contentDescription = if (isDark) "Cambiar a modo claro" else "Cambiar a modo oscuro"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor    = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        },
         bottomBar = {
             NavigationBar(
-                containerColor = Color.White,
-                contentColor   = Color(0xFF1E88E5)
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor   = MaterialTheme.colorScheme.primary
             ) {
                 tabs.forEachIndexed { index, (label, icon, _) ->
                     NavigationBarItem(
@@ -76,7 +103,7 @@ fun HomeScreen(navController: NavController) {
             modifier         = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Matching.route) {
-                MatchingScreen()
+                MatchingScreen(navController = navController)
             }
             composable(Screen.AddRooms.route) {
                 RoomPostListScreen(navController = innerNavController)

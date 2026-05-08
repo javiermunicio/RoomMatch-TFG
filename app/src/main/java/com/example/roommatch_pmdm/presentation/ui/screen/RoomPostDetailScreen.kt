@@ -2,6 +2,7 @@ package com.example.roommatch_pmdm.presentation.ui.screen
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,8 +35,8 @@ import java.nio.charset.StandardCharsets
 
 private val RoomBlue  = Color(0xFF4A90D9)
 private val RoomGreen = Color(0xFF2ECC71)
-private val BgGray    = Color(0xFFF5F5F5)
-private val TextGray  = Color(0xFF888888)
+// MaterialTheme.colorScheme.surfaceVariant replaced by MaterialTheme.colorScheme.surfaceVariant
+// MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) replaced by MaterialTheme.colorScheme.onSurface.copy(alpha=0.6f)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +95,7 @@ fun RoomPostDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor    = Color.White,
+                    containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = RoomBlue
                 )
             )
@@ -103,7 +105,7 @@ fun RoomPostDetailScreen(
                 Surface(
                     modifier        = Modifier.fillMaxWidth(),
                     shadowElevation = 8.dp,
-                    color           = Color.White
+                    color = MaterialTheme.colorScheme.surface
                 ) {
                     if (isOwner) {
                         // ── Botón "Ver interesados" para el dueño ─────────────
@@ -154,7 +156,7 @@ fun RoomPostDetailScreen(
                             if (isLoading) {
                                 CircularProgressIndicator(
                                     modifier    = Modifier.size(22.dp),
-                                    color       = Color.White,
+                                    color = MaterialTheme.colorScheme.surface,
                                     strokeWidth = 2.dp
                                 )
                             } else {
@@ -162,14 +164,14 @@ fun RoomPostDetailScreen(
                                     imageVector        = if (isInterested) Icons.Filled.CheckCircle else Icons.Filled.Favorite,
                                     contentDescription = null,
                                     modifier           = Modifier.size(20.dp),
-                                    tint               = if (isInterested) RoomBlue else Color.White
+                                    tint               = if (isInterested) RoomBlue else MaterialTheme.colorScheme.onPrimary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text       = if (isInterested) "Ya has mostrado interés" else "Me interesa este piso",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize   = 15.sp,
-                                    color      = if (isInterested) RoomBlue else Color.White
+                                    color      = if (isInterested) RoomBlue else MaterialTheme.colorScheme.onPrimary
                                 )
                             }
                         }
@@ -187,7 +189,7 @@ fun RoomPostDetailScreen(
             post == null -> Box(
                 modifier         = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center
-            ) { Text("Anuncio no encontrado", color = TextGray) }
+            ) { Text("Anuncio no encontrado", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
 
             else -> PostDetailContent(
                 post          = post!!,
@@ -213,6 +215,7 @@ private fun PostDetailContent(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
 
@@ -237,14 +240,14 @@ private fun PostDetailContent(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Filled.Home, null, Modifier.size(52.dp), tint = Color(0xFFCCCCCC))
-                    Text("Sin imágenes", color = TextGray, style = MaterialTheme.typography.bodySmall)
+                    Icon(Icons.Filled.Home, null, Modifier.size(52.dp), tint = MaterialTheme.colorScheme.outline)
+                    Text("Sin imágenes", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
 
         // ── Título + precio ──────────────────────────────────────────────────
-        Surface(modifier = Modifier.fillMaxWidth(), color = Color.White, shadowElevation = 1.dp) {
+        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp) {
             Row(
                 modifier              = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -255,7 +258,7 @@ private fun PostDetailContent(
                     Text(
                         "${post.address}, ${post.city}",
                         style    = MaterialTheme.typography.bodySmall,
-                        color    = TextGray,
+                        color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -263,7 +266,7 @@ private fun PostDetailContent(
                     Text(
                         "${post.price}€/mes",
                         modifier   = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        color      = Color.White,
+                        color = MaterialTheme.colorScheme.surface,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 16.sp
                     )
@@ -276,7 +279,7 @@ private fun PostDetailContent(
         // ── Chips de info rápida ─────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            color           = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shape           = MaterialTheme.shapes.medium,
             shadowElevation = 1.dp
         ) {
@@ -290,7 +293,7 @@ private fun PostDetailContent(
                     icon       = Icons.Filled.Favorite,
                     label      = "Interesados",
                     value      = "$interestCount",
-                    valueColor = if (isOwner && interestCount > 0) RoomGreen else Color(0xFF212121)
+                    valueColor = if (isOwner && interestCount > 0) RoomGreen else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -301,7 +304,7 @@ private fun PostDetailContent(
         if (post.description.isNotEmpty()) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                color           = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shape           = MaterialTheme.shapes.medium,
                 shadowElevation = 1.dp
             ) {
@@ -311,7 +314,7 @@ private fun PostDetailContent(
                     Text(
                         post.description,
                         style      = MaterialTheme.typography.bodyMedium,
-                        color      = Color(0xFF424242),
+                        color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 22.sp
                     )
                 }
@@ -322,7 +325,7 @@ private fun PostDetailContent(
         // ── Publicado por ────────────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            color           = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shape           = MaterialTheme.shapes.medium,
             shadowElevation = 1.dp
         ) {
@@ -341,7 +344,7 @@ private fun PostDetailContent(
                     }
                 }
                 Column {
-                    Text("Publicado por", style = MaterialTheme.typography.labelSmall, color = TextGray)
+                    Text("Publicado por", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     Text(
                         post.ownerName.ifEmpty { "Propietario" },
                         style      = MaterialTheme.typography.titleSmall,
@@ -356,7 +359,7 @@ private fun PostDetailContent(
         // ── Ubicación → abre Google Maps ─────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            color           = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shape           = MaterialTheme.shapes.medium,
             shadowElevation = 1.dp
         ) {
@@ -393,7 +396,7 @@ private fun PostDetailContent(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(fullAddress, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                        Text("Toca para abrir en Google Maps", fontSize = 11.sp, color = TextGray)
+                        Text("Toca para abrir en Google Maps", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     }
                     Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
                 }
@@ -411,13 +414,13 @@ private fun InfoChip(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     value: String,
-    valueColor: Color = Color(0xFF212121)
+    valueColor: Color = Color.Unspecified
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(icon, null, tint = RoomBlue, modifier = Modifier.size(22.dp))
         Spacer(modifier = Modifier.height(4.dp))
         Text(value, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = valueColor)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = TextGray)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
     }
 }
 
