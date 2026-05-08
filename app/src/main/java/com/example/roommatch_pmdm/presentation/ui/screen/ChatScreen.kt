@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,9 +38,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 private val BubbleMe    = Color(0xFF1E88E5)
-private val BubbleOther = Color(0xFFEEEEEE)
-private val TextMe      = Color.White
-private val TextOther   = Color(0xFF212121)
+private val BubbleOther @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val TextMe @Composable get() = MaterialTheme.colorScheme.onPrimary
+private val TextOther @Composable get() = MaterialTheme.colorScheme.onSurface
 
 @Composable
 fun ChatListScreen(
@@ -48,6 +49,13 @@ fun ChatListScreen(
 ) {
     val chatUsers by viewModel.chatUsers.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val currentUserId = remember {
+        com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -65,7 +73,7 @@ fun ChatListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -75,7 +83,7 @@ fun ChatListScreen(
                 "Chats",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E88E5),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             )
         }
@@ -86,7 +94,7 @@ fun ChatListScreen(
             }
         } else if (chatUsers.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Aún no tienes chats. ¡Haz match con alguien!", color = Color.Gray)
+                Text("Aún no tienes chats. ¡Haz match con alguien!", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
         } else {
             LazyColumn(
@@ -95,7 +103,10 @@ fun ChatListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(chatUsers) { chatUser ->
-                    ChatUserItem(chatUser) {
+                    ChatUserItem(
+                        chatUser = chatUser,
+                        currentUserId = currentUserId
+                    ) {
                         navController.navigate(Screen.ChatDetail.createRoute(chatUser.id))
                     }
                 }
@@ -105,14 +116,22 @@ fun ChatListScreen(
 }
 
 @Composable
-fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
+fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> Unit) {
+    // ¿El último mensaje lo envié yo?
+    val iSentLast = chatUser.lastMessageSenderId == currentUserId
+    // ¿Hay mensajes que no he leído (me los enviaron a mí y no están leídos)?
+    val hasUnread = !iSentLast && !chatUser.isRead && chatUser.lastMessage != "Toca para chatear"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
         onClick = onItemClick,
         shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (hasUnread) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -121,9 +140,10 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Avatar
             Surface(
                 modifier = Modifier.size(56.dp),
-                color = Color(0xFF1E88E5),
+                color = MaterialTheme.colorScheme.primary,
                 shape = CircleShape
             ) {
                 AsyncImage(
@@ -133,28 +153,69 @@ fun ChatUserItem(chatUser: ChatUser, onItemClick: () -> Unit) {
                 )
             }
 
+            // Nombre + último mensaje
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     chatUser.username,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = if (hasUnread) FontWeight.ExtraBold else FontWeight.Bold
                 )
-                Text(
-                    chatUser.lastMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    maxLines = 1
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    // Si yo envié el último, muestro el check de estado del envío
+                    if (iSentLast && chatUser.lastMessage != "Toca para chatear") {
+                        Icon(
+                            imageVector = if (chatUser.isRead) Icons.Default.DoneAll else Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = if (chatUser.isRead) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                    }
+                    Text(
+                        chatUser.lastMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (hasUnread) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        fontWeight = if (hasUnread) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines = 1
+                    )
+                }
             }
 
-            if (!chatUser.isRead) {
-                Surface(
-                    modifier = Modifier.size(10.dp),
-                    color = Color.Red,
-                    shape = CircleShape
-                ) {}
-            } else {
-                Text("✔", color = Color(0xFF1E88E5), fontSize = 12.sp)
+            // Columna derecha: hora + badge de no leído
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                if (chatUser.timestamp > 0) {
+                    val timeText = remember(chatUser.timestamp) {
+                        val now = System.currentTimeMillis()
+                        val diff = now - chatUser.timestamp
+                        when {
+                            diff < 60 * 60 * 1000 -> // menos de 1h → HH:mm
+                                java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                    .format(java.util.Date(chatUser.timestamp))
+                            diff < 24 * 60 * 60 * 1000 -> // menos de 24h → "Ayer"
+                                "Ayer"
+                            else -> // más de 24h → dd/MM
+                                java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
+                                    .format(java.util.Date(chatUser.timestamp))
+                        }
+                    }
+                    Text(
+                        timeText,
+                        fontSize = 11.sp,
+                        color = if (hasUnread) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                }
+                if (hasUnread) {
+                    Surface(
+                        modifier = Modifier.size(10.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape
+                    ) {}
+                }
             }
         }
     }
@@ -198,7 +259,7 @@ fun ChatDetailScreen(
                         Surface(
                             modifier = Modifier.size(38.dp),
                             shape    = CircleShape,
-                            color    = Color(0xFFDDDDDD)
+                            color = MaterialTheme.colorScheme.outline
                         ) {
                             AsyncImage(
                                 model = otherUser?.profileImage
@@ -229,8 +290,8 @@ fun ChatDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor    = Color.White,
-                    titleContentColor = Color(0xFF1E88E5)
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
@@ -245,7 +306,7 @@ fun ChatDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(Color(0xFFF5F5F5))
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
@@ -262,7 +323,7 @@ fun ChatDetailScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment     = Alignment.CenterVertically
@@ -282,7 +343,7 @@ fun ChatDetailScreen(
                     Icon(
                         imageVector        = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Enviar",
-                        tint               = if (messageInput.isNotBlank()) BubbleMe else Color.Gray
+                        tint               = if (messageInput.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                 }
             }
@@ -338,15 +399,16 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
                     Text(
                         text     = timeText,
                         fontSize = 10.sp,
-                        color    = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     if (isMine) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector        = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Check,
                             contentDescription = if (message.isRead) "Leído" else "Enviado",
-                            modifier           = Modifier.size(14.dp),
-                            tint               = if (message.isRead) Color(0xFF1E88E5) else Color.Gray
+                            modifier = Modifier.size(14.dp),
+                            // Azul si lo ha leído, gris si solo está enviado
+                            tint = if (message.isRead) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
                     }
                 }
