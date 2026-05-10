@@ -1,6 +1,6 @@
 package com.example.roommatch_pmdm.di
 
-import com.example.roommatch_pmdm.ThemeViewModel
+import com.example.roommatch_pmdm.presentation.viewmodel.ThemeViewModel
 import com.example.roommatch_pmdm.data.repositories.*
 import com.example.roommatch_pmdm.domain.usecase.*
 import com.example.roommatch_pmdm.presentation.ui.screen.InterestedUserProfileViewModel

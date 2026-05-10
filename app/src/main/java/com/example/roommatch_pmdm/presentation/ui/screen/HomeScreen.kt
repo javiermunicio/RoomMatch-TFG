@@ -12,7 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.roommatch_pmdm.ThemeViewModel
+import com.example.roommatch_pmdm.presentation.viewmodel.ThemeViewModel
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import androidx.activity.compose.LocalActivity
 import org.koin.androidx.viewmodel.ext.android.getViewModel

@@ -38,13 +38,11 @@ import com.example.roommatch_pmdm.domain.model.UserCard
 import com.example.roommatch_pmdm.presentation.ui.components.swipeableCard
 import com.example.roommatch_pmdm.presentation.viewmodel.MatchingViewModel
 import org.koin.androidx.compose.koinViewModel
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.EuroSymbol
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.ui.draw.drawBehind
