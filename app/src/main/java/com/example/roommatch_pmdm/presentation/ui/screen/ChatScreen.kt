@@ -11,8 +11,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +65,7 @@ fun ChatListScreen(
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
@@ -117,88 +123,111 @@ fun ChatListScreen(
 
 @Composable
 fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> Unit) {
-    // ¿El último mensaje lo envié yo?
+    // ── Lógica de estado del último mensaje ──────────────────────────────────
+    //
+    //  iSentLast → el último mensaje lo envié yo
+    //
+    //  Si iSentLast:
+    //    · chatUser.isRead == true  → el otro lo leyó   → DoneAll azul  (✓✓ azul)
+    //    · chatUser.isRead == false → aún no lo leyó    → Check gris    (✓ gris)
+    //
+    //  Si !iSentLast:
+    //    · chatUser.isRead == false → tengo mensajes nuevos → badge punto azul
+    //    · chatUser.isRead == true  → ya los leí            → sin badge
+    //
     val iSentLast = chatUser.lastMessageSenderId == currentUserId
-    // ¿Hay mensajes que no he leído (me los enviaron a mí y no están leídos)?
     val hasUnread = !iSentLast && !chatUser.isRead && chatUser.lastMessage != "Toca para chatear"
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
-        onClick = onItemClick,
-        shape = MaterialTheme.shapes.medium,
+        onClick   = onItemClick,
+        shape     = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (hasUnread) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+        colors    = CardDefaults.cardColors(
+            containerColor = if (hasUnread)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
-            modifier = Modifier
+            modifier              = Modifier
                 .fillMaxSize()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Avatar
+            // ── Avatar ────────────────────────────────────────────────────────
             Surface(
                 modifier = Modifier.size(56.dp),
-                color = MaterialTheme.colorScheme.primary,
-                shape = CircleShape
+                color    = MaterialTheme.colorScheme.primary,
+                shape    = CircleShape
             ) {
                 AsyncImage(
-                    model = chatUser.profileImage.ifEmpty { "https://via.placeholder.com/56" },
+                    model        = chatUser.profileImage.ifEmpty { "https://via.placeholder.com/56" },
                     contentDescription = null,
                     contentScale = ContentScale.Crop
                 )
             }
 
-            // Nombre + último mensaje
+            // ── Nombre + último mensaje ───────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     chatUser.username,
-                    style = MaterialTheme.typography.titleSmall,
+                    style      = MaterialTheme.typography.titleSmall,
                     fontWeight = if (hasUnread) FontWeight.ExtraBold else FontWeight.Bold
                 )
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // Si yo envié el último, muestro el check de estado del envío
+                    // ── Ticks de estado (solo cuando yo envié el último mensaje) ─
                     if (iSentLast && chatUser.lastMessage != "Toca para chatear") {
                         Icon(
-                            imageVector = if (chatUser.isRead) Icons.Default.DoneAll else Icons.Default.Check,
-                            contentDescription = null,
+                            // DoneAll (✓✓) si el otro lo leyó, Check (✓) si no
+                            imageVector = if (chatUser.isRead)
+                                Icons.Default.DoneAll
+                            else
+                                Icons.Default.Check,
+                            contentDescription = if (chatUser.isRead) "Leído" else "Enviado",
                             modifier = Modifier.size(13.dp),
-                            tint = if (chatUser.isRead) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            // Azul si leído, gris si solo enviado — igual que ChatDetailScreen
+                            tint = if (chatUser.isRead)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
                     }
                     Text(
                         chatUser.lastMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (hasUnread) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        style      = MaterialTheme.typography.bodySmall,
+                        color      = if (hasUnread)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         fontWeight = if (hasUnread) FontWeight.SemiBold else FontWeight.Normal,
-                        maxLines = 1
+                        maxLines   = 1
                     )
                 }
             }
 
-            // Columna derecha: hora + badge de no leído
+            // ── Hora + badge de no leído ──────────────────────────────────────
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 if (chatUser.timestamp > 0) {
                     val timeText = remember(chatUser.timestamp) {
-                        val now = System.currentTimeMillis()
+                        val now  = System.currentTimeMillis()
                         val diff = now - chatUser.timestamp
                         when {
-                            diff < 60 * 60 * 1000 -> // menos de 1h → HH:mm
+                            diff < 60 * 60 * 1000 ->
                                 java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                                     .format(java.util.Date(chatUser.timestamp))
-                            diff < 24 * 60 * 60 * 1000 -> // menos de 24h → "Ayer"
-                                "Ayer"
-                            else -> // más de 24h → dd/MM
+                            diff < 24 * 60 * 60 * 1000 -> "Ayer"
+                            else ->
                                 java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
                                     .format(java.util.Date(chatUser.timestamp))
                         }
@@ -206,14 +235,18 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
                     Text(
                         timeText,
                         fontSize = 11.sp,
-                        color = if (hasUnread) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        color    = if (hasUnread)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                 }
+                // Punto azul solo cuando hay mensajes sin leer del otro
                 if (hasUnread) {
                     Surface(
                         modifier = Modifier.size(10.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape
+                        color    = MaterialTheme.colorScheme.primary,
+                        shape    = CircleShape
                     ) {}
                 }
             }
@@ -228,11 +261,19 @@ fun ChatDetailScreen(
     navController: NavController? = null,
     viewModel: ChatDetailViewModel = koinViewModel()
 ) {
-    val messages     by viewModel.messages.collectAsState()
-    val messageInput by viewModel.messageInput.collectAsState()
-    val currentUid   by viewModel.currentUserIdFlow.collectAsState()
-    val listState    = rememberLazyListState()
-    val otherUser    by viewModel.otherUser.collectAsState()
+    val messages        by viewModel.messages.collectAsState()
+    val messageInput    by viewModel.messageInput.collectAsState()
+    val currentUid      by viewModel.currentUserIdFlow.collectAsState()
+    val listState       = rememberLazyListState()
+    val otherUser       by viewModel.otherUser.collectAsState()
+    val isBlocked       by viewModel.isBlocked.collectAsState()
+    val isBlockedByOther by viewModel.isBlockedByOther.collectAsState()
+    val actionDone      by viewModel.actionDone.collectAsState()
+
+    var showMenu              by remember { mutableStateOf(false) }
+    var showDeleteDialog      by remember { mutableStateOf(false) }
+    var showBlockDialog       by remember { mutableStateOf(false) }
+    var showUnblockDialog     by remember { mutableStateOf(false) }
 
     LaunchedEffect(chatUserId) {
         viewModel.loadMessages(chatUserId)
@@ -240,9 +281,68 @@ fun ChatDetailScreen(
     }
 
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.lastIndex)
+        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+    }
+
+    LaunchedEffect(actionDone) {
+        if (actionDone != null) {
+            viewModel.clearActionDone()
+            navController?.popBackStack()
         }
+    }
+
+    // ── Diálogo borrar chat ────────────────────────────────────────────────
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Borrar conversación") },
+            text  = { Text("¿Borrar este chat? El otro usuario podrá escribirte de nuevo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    viewModel.deleteConversation(chatUserId) {}
+                }) { Text("Borrar", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // ── Diálogo bloquear ───────────────────────────────────────────────────
+    if (showBlockDialog) {
+        AlertDialog(
+            onDismissRequest = { showBlockDialog = false },
+            title = { Text("Bloquear usuario") },
+            text  = { Text("¿Bloquear a ${otherUser?.username}? No podrá contactarte ni verás su perfil. El chat se borrará.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showBlockDialog = false
+                    viewModel.blockUser(chatUserId) {}
+                }) { Text("Bloquear", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBlockDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // ── Diálogo desbloquear ────────────────────────────────────────────────
+    if (showUnblockDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnblockDialog = false },
+            title = { Text("Desbloquear usuario") },
+            text  = { Text("¿Desbloquear a ${otherUser?.username}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUnblockDialog = false
+                    viewModel.unblockUser(chatUserId)
+                }) { Text("Desbloquear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnblockDialog = false }) { Text("Cancelar") }
+            }
+        )
     }
 
     Scaffold(
@@ -259,7 +359,7 @@ fun ChatDetailScreen(
                         Surface(
                             modifier = Modifier.size(38.dp),
                             shape    = CircleShape,
-                            color = MaterialTheme.colorScheme.outline
+                            color    = MaterialTheme.colorScheme.outline
                         ) {
                             AsyncImage(
                                 model = otherUser?.profileImage
@@ -267,39 +367,83 @@ fun ChatDetailScreen(
                                     ?: "https://via.placeholder.com/38",
                                 contentDescription = null,
                                 contentScale       = ContentScale.Crop,
-                                modifier           = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
+                                modifier           = Modifier.fillMaxSize().clip(CircleShape)
                             )
                         }
-                        Text(
-                            text       = otherUser?.username ?: "Chat",
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 16.sp
-                        )
+                        Column {
+                            Text(
+                                text       = otherUser?.username ?: "Chat",
+                                fontWeight = FontWeight.Bold,
+                                fontSize   = 16.sp
+                            )
+                            if (isBlocked) {
+                                Text(
+                                    "Bloqueado",
+                                    fontSize = 11.sp,
+                                    color    = MaterialTheme.colorScheme.error
+                                )
+                            } else if (isBlockedByOther) {
+                                Text(
+                                    "No puedes enviar mensajes",
+                                    fontSize = 11.sp,
+                                    color    = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
                     if (navController != null) {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver"
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                    }
+                    DropdownMenu(
+                        expanded         = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Borrar conversación") },
+                            leadingIcon = {
+                                Icon(Icons.Default.DeleteOutline, contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error)
+                            },
+                            onClick = { showMenu = false; showDeleteDialog = true }
+                        )
+                        if (isBlocked) {
+                            DropdownMenuItem(
+                                text = { Text("Desbloquear usuario") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.LockOpen, contentDescription = null)
+                                },
+                                onClick = { showMenu = false; showUnblockDialog = true }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Bloquear usuario", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Block, contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error)
+                                },
+                                onClick = { showMenu = false; showBlockDialog = true }
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor    = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize().padding(innerPadding)
         ) {
             LazyColumn(
                 state    = listState,
@@ -311,40 +455,68 @@ fun ChatDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(messages, key = { it.id }) { message ->
-                    MessageBubble(
-                        message       = message,
-                        currentUserId = currentUid
-                    )
+                    MessageBubble(message = message, currentUserId = currentUid)
                 }
             }
 
             HorizontalDivider()
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment     = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value         = messageInput,
-                    onValueChange = { viewModel.onMessageInputChanged(it) },
-                    placeholder   = { Text("Escribe un mensaje...") },
-                    modifier      = Modifier.weight(1f),
-                    shape         = MaterialTheme.shapes.large,
-                    maxLines      = 4
-                )
-                IconButton(
-                    onClick = { viewModel.sendMessage(chatUserId) },
-                    enabled = messageInput.isNotBlank()
+            if (isBlocked) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color    = MaterialTheme.colorScheme.errorContainer
                 ) {
-                    Icon(
-                        imageVector        = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Enviar",
-                        tint               = if (messageInput.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    Text(
+                        "Has bloqueado a este usuario",
+                        modifier  = Modifier.padding(16.dp),
+                        color     = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center,
+                        style     = MaterialTheme.typography.bodyMedium
                     )
+                }
+            } else if (isBlockedByOther) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color    = MaterialTheme.colorScheme.errorContainer
+                ) {
+                    Text(
+                        "No puedes enviar mensajes a este usuario",
+                        modifier  = Modifier.padding(16.dp),
+                        color     = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center,
+                        style     = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value         = messageInput,
+                        onValueChange = { viewModel.onMessageInputChanged(it) },
+                        placeholder   = { Text("Escribe un mensaje...") },
+                        modifier      = Modifier.weight(1f),
+                        shape         = MaterialTheme.shapes.large,
+                        maxLines      = 4
+                    )
+                    IconButton(
+                        onClick  = { viewModel.sendMessage(chatUserId) },
+                        enabled  = messageInput.isNotBlank()
+                    ) {
+                        Icon(
+                            imageVector        = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Enviar",
+                            tint               = if (messageInput.isNotBlank())
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                    }
                 }
             }
         }

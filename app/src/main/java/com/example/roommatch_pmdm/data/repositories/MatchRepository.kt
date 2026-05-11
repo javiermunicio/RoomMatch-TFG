@@ -114,4 +114,20 @@ class MatchRepository(private val firestore: FirebaseFirestore) {
         val likeId = "${fromUserId}_${toUserId}"
         return likesCollection.document(likeId).get().await().exists()
     }
+
+    suspend fun deleteMatchAndLikes(currentUserId: String, otherUserId: String) {
+        try {
+            val matchId1 = "${currentUserId}_${otherUserId}"
+            val matchId2 = "${otherUserId}_${currentUserId}"
+            val likeId1  = "${currentUserId}_${otherUserId}"
+            val likeId2  = "${otherUserId}_${currentUserId}"
+
+            matchesCollection.document(matchId1).delete().await()
+            matchesCollection.document(matchId2).delete().await()
+            likesCollection.document(likeId1).delete().await()
+            likesCollection.document(likeId2).delete().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

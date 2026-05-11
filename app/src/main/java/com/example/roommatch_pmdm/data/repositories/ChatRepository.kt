@@ -139,4 +139,23 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             emptyList()
         }
     }
+    suspend fun deleteConversation(currentUserId: String, otherUserId: String) {
+        try {
+            val convId = conversationId(currentUserId, otherUserId)
+            val convRef = messagesCollection.document(convId)
+
+            // Borrar todos los mensajes
+            val msgs = convRef.collection("msgs").get().await()
+            val batch = firestore.batch()
+            for (doc in msgs.documents) {
+                batch.delete(doc.reference)
+            }
+            batch.commit().await()
+
+            // Borrar el documento de la conversación
+            convRef.delete().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

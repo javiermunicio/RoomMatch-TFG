@@ -3,6 +3,7 @@ package com.example.roommatch_pmdm.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.BlockRepository
 import com.example.roommatch_pmdm.domain.model.RoomPost
 import com.example.roommatch_pmdm.domain.usecase.DeleteRoomPostUseCase
 import com.example.roommatch_pmdm.domain.usecase.ListRoomPostsUseCase
@@ -16,27 +17,38 @@ import kotlinx.coroutines.launch
 class RoomPostListViewModel(
     private val listRoomPostsUseCase:  ListRoomPostsUseCase,
     private val deleteRoomPostUseCase: DeleteRoomPostUseCase,
-    private val authRepository:        AuthRepository
+    private val authRepository: AuthRepository,
+    private val blockRepository: BlockRepository
 ) : ViewModel() {
 
     val filterCity      = MutableStateFlow("")  // ciudad (parcial, ignora mayúsc.)
     val filterMaxPrice  = MutableStateFlow("")  // presupuesto máximo en €
     val filterRoommates = MutableStateFlow("")  // número exacto de compañeros
 
+    private val _blockedIds = MutableStateFlow<Set<String>>(emptySet())
+
+
     private val _allPosts = listRoomPostsUseCase()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    init {
+        viewModelScope.launch {
+            val uid = authRepository.currentUser?.uid ?: return@launch
+            val blockedByMe   = blockRepository.getBlockedUserIds(uid).toSet()
+            val blockedByThem = blockRepository.getUsersWhoBlockedMe(uid).toSet()
+            _blockedIds.value = blockedByMe + blockedByThem
+        }
+    }
+
     val roomPosts: StateFlow<List<RoomPost>> = combine(
-        _allPosts, filterCity, filterMaxPrice, filterRoommates
-    ) { posts, city, maxPrice, roommates ->
+        _allPosts, filterCity, filterMaxPrice, filterRoommates, _blockedIds
+    ) { posts, city, maxPrice, roommates, blocked ->
         posts.filter { post ->
-            val cityOk      = city.isBlank() ||
-                    post.city.contains(city.trim(), ignoreCase = true)
-            val priceOk     = maxPrice.isBlank() ||
-                    (maxPrice.toLongOrNull()?.let { post.price <= it } ?: true)
-            val roommatesOk = roommates.isBlank() ||
-                    (roommates.toIntOrNull()?.let { post.roommates == it } ?: true)
-            cityOk && priceOk && roommatesOk
+            val cityOk      = city.isBlank() || post.city.contains(city.trim(), ignoreCase = true)
+            val priceOk     = maxPrice.isBlank() || (maxPrice.toLongOrNull()?.let { post.price <= it } ?: true)
+            val roommatesOk = roommates.isBlank() || (roommates.toIntOrNull()?.let { post.roommates == it } ?: true)
+            val notBlocked  = post.ownerId !in blocked
+            cityOk && priceOk && roommatesOk && notBlocked
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

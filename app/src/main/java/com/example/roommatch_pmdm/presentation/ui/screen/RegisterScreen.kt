@@ -30,11 +30,9 @@ import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.RegisterViewModel
 import org.koin.androidx.compose.koinViewModel
 
-private val FigmaPink       = Color(0xFFF8C8C8)
 private val FigmaBlue       = Color(0xFF4A90D9)
 private val FigmaRed        = Color(0xFFE05A5A)
 private val FigmaButtonBlue = Color(0xFF4A9FD9)
-private val WhiteCard       = Color(0xFFFFFFFF)
 
 @Composable
 fun RegisterScreen(
@@ -49,6 +47,12 @@ fun RegisterScreen(
     val registerSuccess by viewModel.registerSuccess.collectAsState()
     val errorMessage    by viewModel.errorMessage.collectAsState()
 
+    // Colores que se adaptan al tema
+    val topBgColor  = MaterialTheme.colorScheme.primaryContainer
+    val cardBgColor = MaterialTheme.colorScheme.surface
+    val fieldBorder = MaterialTheme.colorScheme.primary
+    val labelColor  = MaterialTheme.colorScheme.primary
+
     var passwordVisible        by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
@@ -62,21 +66,21 @@ fun RegisterScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // ── Fondo rosa superior ───────────────────────────────────────────────
+        // ── Fondo superior adaptativo ─────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.42f)
-                .background(FigmaPink)
+                .background(topBgColor)
         )
 
-        // ── Fondo blanco inferior ─────────────────────────────────────────────
+        // ── Fondo inferior adaptativo ─────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.58f)
                 .align(Alignment.BottomCenter)
-                .background(WhiteCard)
+                .background(cardBgColor)
         )
 
         Column(
@@ -88,12 +92,12 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // ── Logo en círculo blanco ────────────────────────────────────────
+            // ── Logo ──────────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(100.dp)
                     .clip(RoundedCornerShape(50.dp))
-                    .background(WhiteCard),
+                    .background(cardBgColor),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -105,7 +109,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // ── "RoomMatch" bicolor ───────────────────────────────────────────
+            // ── "RoomMatch" bicolor ───────────────────────────────────────
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(color = FigmaBlue)) { append("Room") }
@@ -117,59 +121,71 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Card blanca con formulario ────────────────────────────────────
+            // ── Card blanca/oscura con formulario ─────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                    .background(WhiteCard)
+                    .background(cardBgColor)
                     .padding(horizontal = 28.dp, vertical = 28.dp)
             ) {
                 Column {
 
                     // Usuario
-                    FigmaField(
+                    AdaptiveField(
                         value         = username,
                         onValueChange = { viewModel.onUsernameChanged(it) },
                         label         = "Usuario",
-                        icon          = Icons.Outlined.Person
+                        icon          = Icons.Outlined.Person,
+                        fieldBorder   = fieldBorder,
+                        labelColor    = labelColor,
+                        cardBgColor   = cardBgColor
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Correo
-                    FigmaField(
+                    AdaptiveField(
                         value         = email,
                         onValueChange = { viewModel.onEmailChanged(it) },
                         label         = "Correo Electrónico",
                         icon          = Icons.Outlined.Email,
-                        keyboardType  = KeyboardType.Email
+                        keyboardType  = KeyboardType.Email,
+                        fieldBorder   = fieldBorder,
+                        labelColor    = labelColor,
+                        cardBgColor   = cardBgColor
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Contraseña
-                    FigmaField(
+                    AdaptiveField(
                         value            = password,
                         onValueChange    = { viewModel.onPasswordChanged(it) },
                         label            = "Contraseña",
                         icon             = Icons.Outlined.Lock,
                         isPassword       = true,
                         passwordVisible  = passwordVisible,
-                        onTogglePassword = { passwordVisible = !passwordVisible }
+                        onTogglePassword = { passwordVisible = !passwordVisible },
+                        fieldBorder      = fieldBorder,
+                        labelColor       = labelColor,
+                        cardBgColor      = cardBgColor
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Confirmar contraseña
-                    FigmaField(
+                    AdaptiveField(
                         value            = confirmPassword,
                         onValueChange    = { viewModel.onConfirmPasswordChanged(it) },
                         label            = "Confirmar Contraseña",
                         icon             = Icons.Outlined.Lock,
                         isPassword       = true,
                         passwordVisible  = confirmPasswordVisible,
-                        onTogglePassword = { confirmPasswordVisible = !confirmPasswordVisible }
+                        onTogglePassword = { confirmPasswordVisible = !confirmPasswordVisible },
+                        fieldBorder      = fieldBorder,
+                        labelColor       = labelColor,
+                        cardBgColor      = cardBgColor
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -198,7 +214,7 @@ fun RegisterScreen(
                     ) {
                         Text(
                             "Ya tienes cuenta? ",
-                            color    = FigmaBlue,
+                            color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             fontSize = 14.sp
                         )
                         Text(

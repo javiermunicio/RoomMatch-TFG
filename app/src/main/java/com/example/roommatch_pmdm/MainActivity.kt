@@ -14,6 +14,7 @@ import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.notifications.RequestNotificationPermission
 import com.example.roommatch_pmdm.presentation.navigation.NavGraph
 import com.example.roommatch_pmdm.presentation.navigation.Screen
+import com.example.roommatch_pmdm.presentation.viewmodel.ThemeViewModel
 import com.example.roommatch_pmdm.ui.theme.RoomMatchTheme
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
