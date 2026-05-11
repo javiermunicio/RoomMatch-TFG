@@ -71,8 +71,8 @@ class ChatListViewModel(
 
                         val filteredUserIds = allUserIds.filter { it !in allBlocked }
 
-                        val realtimeIds = allUserIds.take(MAX_REALTIME_CHATS)
-                        val staticIds   = allUserIds.drop(MAX_REALTIME_CHATS)
+                        val realtimeIds = filteredUserIds.take(MAX_REALTIME_CHATS)
+                        val staticIds   = filteredUserIds.drop(MAX_REALTIME_CHATS)
 
                         val realtimeFlows = realtimeIds.map { userId ->
                             combine(
