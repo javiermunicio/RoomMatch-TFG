@@ -60,6 +60,7 @@ fun ChatListScreen(
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
@@ -117,88 +118,111 @@ fun ChatListScreen(
 
 @Composable
 fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> Unit) {
-    // ¿El último mensaje lo envié yo?
+    // ── Lógica de estado del último mensaje ──────────────────────────────────
+    //
+    //  iSentLast → el último mensaje lo envié yo
+    //
+    //  Si iSentLast:
+    //    · chatUser.isRead == true  → el otro lo leyó   → DoneAll azul  (✓✓ azul)
+    //    · chatUser.isRead == false → aún no lo leyó    → Check gris    (✓ gris)
+    //
+    //  Si !iSentLast:
+    //    · chatUser.isRead == false → tengo mensajes nuevos → badge punto azul
+    //    · chatUser.isRead == true  → ya los leí            → sin badge
+    //
     val iSentLast = chatUser.lastMessageSenderId == currentUserId
-    // ¿Hay mensajes que no he leído (me los enviaron a mí y no están leídos)?
     val hasUnread = !iSentLast && !chatUser.isRead && chatUser.lastMessage != "Toca para chatear"
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
-        onClick = onItemClick,
-        shape = MaterialTheme.shapes.medium,
+        onClick   = onItemClick,
+        shape     = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (hasUnread) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+        colors    = CardDefaults.cardColors(
+            containerColor = if (hasUnread)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
-            modifier = Modifier
+            modifier              = Modifier
                 .fillMaxSize()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Avatar
+            // ── Avatar ────────────────────────────────────────────────────────
             Surface(
                 modifier = Modifier.size(56.dp),
-                color = MaterialTheme.colorScheme.primary,
-                shape = CircleShape
+                color    = MaterialTheme.colorScheme.primary,
+                shape    = CircleShape
             ) {
                 AsyncImage(
-                    model = chatUser.profileImage.ifEmpty { "https://via.placeholder.com/56" },
+                    model        = chatUser.profileImage.ifEmpty { "https://via.placeholder.com/56" },
                     contentDescription = null,
                     contentScale = ContentScale.Crop
                 )
             }
 
-            // Nombre + último mensaje
+            // ── Nombre + último mensaje ───────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     chatUser.username,
-                    style = MaterialTheme.typography.titleSmall,
+                    style      = MaterialTheme.typography.titleSmall,
                     fontWeight = if (hasUnread) FontWeight.ExtraBold else FontWeight.Bold
                 )
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // Si yo envié el último, muestro el check de estado del envío
+                    // ── Ticks de estado (solo cuando yo envié el último mensaje) ─
                     if (iSentLast && chatUser.lastMessage != "Toca para chatear") {
                         Icon(
-                            imageVector = if (chatUser.isRead) Icons.Default.DoneAll else Icons.Default.Check,
-                            contentDescription = null,
+                            // DoneAll (✓✓) si el otro lo leyó, Check (✓) si no
+                            imageVector = if (chatUser.isRead)
+                                Icons.Default.DoneAll
+                            else
+                                Icons.Default.Check,
+                            contentDescription = if (chatUser.isRead) "Leído" else "Enviado",
                             modifier = Modifier.size(13.dp),
-                            tint = if (chatUser.isRead) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            // Azul si leído, gris si solo enviado — igual que ChatDetailScreen
+                            tint = if (chatUser.isRead)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
                     }
                     Text(
                         chatUser.lastMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (hasUnread) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        style      = MaterialTheme.typography.bodySmall,
+                        color      = if (hasUnread)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         fontWeight = if (hasUnread) FontWeight.SemiBold else FontWeight.Normal,
-                        maxLines = 1
+                        maxLines   = 1
                     )
                 }
             }
 
-            // Columna derecha: hora + badge de no leído
+            // ── Hora + badge de no leído ──────────────────────────────────────
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 if (chatUser.timestamp > 0) {
                     val timeText = remember(chatUser.timestamp) {
-                        val now = System.currentTimeMillis()
+                        val now  = System.currentTimeMillis()
                         val diff = now - chatUser.timestamp
                         when {
-                            diff < 60 * 60 * 1000 -> // menos de 1h → HH:mm
+                            diff < 60 * 60 * 1000 ->
                                 java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                                     .format(java.util.Date(chatUser.timestamp))
-                            diff < 24 * 60 * 60 * 1000 -> // menos de 24h → "Ayer"
-                                "Ayer"
-                            else -> // más de 24h → dd/MM
+                            diff < 24 * 60 * 60 * 1000 -> "Ayer"
+                            else ->
                                 java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
                                     .format(java.util.Date(chatUser.timestamp))
                         }
@@ -206,14 +230,18 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
                     Text(
                         timeText,
                         fontSize = 11.sp,
-                        color = if (hasUnread) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        color    = if (hasUnread)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                 }
+                // Punto azul solo cuando hay mensajes sin leer del otro
                 if (hasUnread) {
                     Surface(
                         modifier = Modifier.size(10.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape
+                        color    = MaterialTheme.colorScheme.primary,
+                        shape    = CircleShape
                     ) {}
                 }
             }

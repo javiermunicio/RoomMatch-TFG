@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -34,7 +33,6 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 private val RoomBlue = Color(0xFF4A90D9)
-private val TextGray = Color(0xFF888888)
 
 // ── Data class combinada ──────────────────────────────────────────────────────
 
@@ -79,7 +77,7 @@ fun InterestedUsersListScreen(
     navController: NavController,
     viewModel: InterestedUsersListViewModel = koinViewModel()
 ) {
-    val items by viewModel.items.collectAsState()
+    val items     by viewModel.items.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     LaunchedEffect(postId) { viewModel.loadInterests(postId) }
@@ -98,9 +96,11 @@ fun InterestedUsersListScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+                // ── TopAppBar adaptada al tema ────────────────────────────────
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor    = Color.White,
-                    titleContentColor = RoomBlue
+                    containerColor    = MaterialTheme.colorScheme.surface,
+                    titleContentColor = RoomBlue,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -117,14 +117,14 @@ fun InterestedUsersListScreen(
             ) {
                 Text(
                     "Aún no hay nadie interesado en este anuncio",
-                    color = TextGray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             else -> LazyColumn(
-                modifier        = Modifier.fillMaxSize().padding(innerPadding),
-                contentPadding  = PaddingValues(16.dp),
+                modifier            = Modifier.fillMaxSize().padding(innerPadding),
+                contentPadding      = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(items, key = { it.interest.id }) { item ->
@@ -135,7 +135,7 @@ fun InterestedUsersListScreen(
                                 Screen.InterestedUserProfile.createRoute(item.interest.interestedUserId)
                             )
                         },
-                        onChat        = {
+                        onChat = {
                             navController.navigate(
                                 Screen.ChatDetail.createRoute(item.interest.interestedUserId)
                             )
@@ -160,18 +160,21 @@ private fun InterestedUserCard(
     Card(
         modifier  = Modifier.fillMaxWidth().clickable { onViewProfile() },
         elevation = CardDefaults.cardElevation(2.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White)
+        // ── fondo de la card adaptado al tema ─────────────────────────────
+        colors    = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
-            modifier          = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier              = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Avatar
+            // ── Avatar ────────────────────────────────────────────────────────
             Surface(
                 modifier = Modifier.size(52.dp),
                 shape    = CircleShape,
-                color    = RoomBlue.copy(alpha = 0.1f)
+                color    = RoomBlue.copy(alpha = 0.12f)
             ) {
                 if (user?.profileImage?.isNotEmpty() == true) {
                     AsyncImage(
@@ -192,31 +195,32 @@ private fun InterestedUserCard(
                 }
             }
 
-            // Datos
+            // ── Datos del usuario ─────────────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text       = user?.username?.ifEmpty { item.interest.interestedUsername }
                         ?: item.interest.interestedUsername,
                     style      = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color      = MaterialTheme.colorScheme.onSurface
                 )
                 if (user?.location?.isNotEmpty() == true) {
                     Text(
                         text  = "📍 ${user.location}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextGray
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                     )
                 }
                 if ((user?.budget ?: 0) > 0) {
                     Text(
                         text  = "💶 Hasta ${user!!.budget}€/mes",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextGray
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                     )
                 }
             }
 
-            // Botón chat
+            // ── Botón chat ────────────────────────────────────────────────────
             IconButton(onClick = onChat) {
                 Icon(
                     Icons.AutoMirrored.Filled.Chat,
