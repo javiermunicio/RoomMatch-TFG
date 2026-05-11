@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.BlockRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.User
@@ -22,6 +23,7 @@ class MatchingViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
+    private val blockRepository: BlockRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -47,9 +49,14 @@ class MatchingViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val currentUser = userRepository.getUser(currentUserId).getOrNull()
+                val currentUser   = userRepository.getUser(currentUserId).getOrNull()
+                val blockedByMe   = blockRepository.getBlockedUserIds(currentUserId).toSet()
+                val blockedByThem = blockRepository.getUsersWhoBlockedMe(currentUserId).toSet()
+                val allBlocked    = blockedByMe + blockedByThem
 
                 val users = matchRepository.getUsersToSwipe(currentUserId)
+                    .filter { it.id !in allBlocked }
+
                 val cards = users.map { user ->
                     UserCard(
                         id           = user.id,

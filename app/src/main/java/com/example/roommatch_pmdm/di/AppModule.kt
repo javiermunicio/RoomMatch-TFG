@@ -27,6 +27,7 @@ val appModule = module {
     single { MatchRepository(get()) }
     single { ChatRepository(get()) }
     single { InterestRepository(get()) }
+    single { BlockRepository(get()) }
 
     // Use cases
     factory { AddRoomPostUseCase(get()) }
@@ -37,12 +38,12 @@ val appModule = module {
     viewModel { ThemeViewModel(androidContext()) }          // ← NUEVO
     viewModel { LoginViewModel(get()) }
     viewModel { RegisterViewModel(get(), get()) }
-    viewModel { MatchingViewModel(get(), get(),get(), androidContext()) }
-    viewModel { ChatListViewModel(get(), get(), get()) }
-    viewModel { ChatDetailViewModel(get(), get(), androidContext()) }
+    viewModel { MatchingViewModel(get(), get(),get(),get(), androidContext()) }
+    viewModel { ChatListViewModel(get(), get(), get(), get()) }
+    viewModel { ChatDetailViewModel(get(), get(),get(), androidContext()) }
     viewModel { ProfileViewModel(get(), get(), get()) }
     viewModel { AddRoomPostViewModel(get(), get(), get()) }
-    viewModel { RoomPostListViewModel(get(), get(), get()) }
+    viewModel { RoomPostListViewModel(get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(get(), get(), get()) }
     viewModel { RoomPostDetailViewModel(get(), get(), get(), get(), androidContext()) }
     viewModel { EditRoomPostViewModel(get(), get(), get()) }
