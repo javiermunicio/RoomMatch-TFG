@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.BlockRepository
 import com.example.roommatch_pmdm.data.repositories.ChatRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.ChatMessage
@@ -22,17 +23,13 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
-// ---------------------------------------------------------------------------
-// Número máximo de conversaciones que combinamos en tiempo real.
-// Por encima de este umbral se muestra igualmente la lista pero sin
-// reactividad ultra-fina (se refresca solo al volver a la pantalla).
-// ---------------------------------------------------------------------------
 private const val MAX_REALTIME_CHATS = 30
 
 class ChatListViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val blockRepository: BlockRepository,
 ) : ViewModel() {
 
     private val _chatUsers = MutableStateFlow<List<ChatUser>>(emptyList())
@@ -41,39 +38,23 @@ class ChatListViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // ── Trigger de refresco ─────────────────────────────────────────────────
-    // Incrementar este valor cancela el flow anterior y arranca uno nuevo,
-    // evitando coroutines duplicadas sin necesidad de gestionar Job a mano.
     private val _refreshTick = MutableStateFlow(0)
-
-    // ── Job único para la pipeline de chats ────────────────────────────────
     private var chatsJob: Job? = null
 
-    init {
-        startObserving()
-    }
+    init { startObserving() }
 
-    // Cancela el job activo y arranca uno nuevo limpio.
-    // Llamar a refresh() es seguro desde cualquier punto del ciclo de vida.
-    fun refresh() {
-        _refreshTick.value++          // dispara flatMapLatest → cancela el flow anterior
-    }
+    fun refresh() { _refreshTick.value++ }
 
     private fun startObserving() {
-        // Cancelamos cualquier job previo antes de crear uno nuevo
         chatsJob?.cancel()
         chatsJob = viewModelScope.launch {
             val currentUserId = authRepository.currentUser?.uid ?: return@launch
-
-            // flatMapLatest sobre _refreshTick: cada vez que refresh() incrementa
-            // el tick, el bloque interno se cancela y se re-ejecuta desde cero.
             _refreshTick
                 .flatMapLatest { _ ->
                     flow {
-                        emit(emptyList<ChatUser>())          // limpia UI mientras carga
+                        emit(emptyList<ChatUser>())
                         _isLoading.value = true
 
-                        // 1. Obtener todos los IDs con los que hay conversación
                         val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
                         val activeIds  = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
                         val allUserIds = (matchedIds + activeIds).toList()
@@ -84,13 +65,15 @@ class ChatListViewModel(
                             return@flow
                         }
 
-                        // 2. Separamos en dos grupos:
-                        //    · realtimeIds  → combinamos flows en tiempo real (≤ MAX_REALTIME_CHATS)
-                        //    · staticIds    → carga one-shot (escalan sin problema)
+                        val blockedByMe   = blockRepository.getBlockedUserIds(currentUserId).toSet()
+                        val blockedByThem = blockRepository.getUsersWhoBlockedMe(currentUserId).toSet()
+                        val allBlocked    = blockedByMe + blockedByThem
+
+                        val filteredUserIds = allUserIds.filter { it !in allBlocked }
+
                         val realtimeIds = allUserIds.take(MAX_REALTIME_CHATS)
                         val staticIds   = allUserIds.drop(MAX_REALTIME_CHATS)
 
-                        // 3. Construimos los flows reactivos solo para realtimeIds
                         val realtimeFlows = realtimeIds.map { userId ->
                             combine(
                                 chatRepository.getLastMessageFlow(currentUserId, userId),
@@ -100,7 +83,6 @@ class ChatListViewModel(
                             }
                         }
 
-                        // 4. Flow para los IDs estáticos (one-shot, sin listener Firestore)
                         val staticFlow = flowOf(
                             staticIds.mapNotNull { userId ->
                                 val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
@@ -108,7 +90,6 @@ class ChatListViewModel(
                             }
                         )
 
-                        // 5. Combinar ambos grupos y emitir la lista ordenada
                         val combinedFlow = if (realtimeFlows.isEmpty()) {
                             staticFlow
                         } else {
@@ -116,8 +97,7 @@ class ChatListViewModel(
                                 combine(realtimeFlows) { it.filterNotNull().toList() },
                                 staticFlow
                             ) { realtimeList, staticList ->
-                                (realtimeList + staticList)
-                                    .sortedByDescending { it.timestamp }
+                                (realtimeList + staticList).sortedByDescending { it.timestamp }
                             }
                         }
 
@@ -127,18 +107,14 @@ class ChatListViewModel(
                         }
                     }
                 }
-                .collect { users ->
-                    _chatUsers.value = users
-                }
+                .collect { users -> _chatUsers.value = users }
         }
     }
 
-    // Construye un ChatUser a partir de los datos del usuario y el último mensaje.
-    // Retorna null si el usuario no existe en Firestore (conversación huérfana).
     private suspend fun buildChatUser(
         currentUserId: String,
-        otherUserId:   String,
-        lastMsg:       ChatMessage?
+        otherUserId: String,
+        lastMsg: ChatMessage?
     ): ChatUser? {
         val user = chatRepository.getUserData(otherUserId) ?: return null
         return ChatUser(
@@ -147,10 +123,6 @@ class ChatListViewModel(
             profileImage        = user.profileImage,
             lastMessage         = lastMsg?.content ?: "Toca para chatear",
             timestamp           = lastMsg?.timestamp ?: 0L,
-            // isRead refleja el estado REAL del mensaje en Firestore.
-            // · Si yo soy el receptor  → isRead indica si lo leí yo.
-            // · Si yo soy el emisor    → isRead indica si lo leyó el otro.
-            // En ambos casos usamos el valor del documento sin alterar.
             isRead              = lastMsg?.isRead ?: true,
             lastMessageSenderId = lastMsg?.senderId ?: ""
         )
@@ -162,14 +134,10 @@ class ChatListViewModel(
     }
 }
 
-// ---------------------------------------------------------------------------
-// ChatDetailViewModel — sin cambios funcionales respecto al original,
-// incluido aquí para mantener el archivo unificado.
-// ---------------------------------------------------------------------------
-
 class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
+    private val blockRepository: BlockRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -187,15 +155,24 @@ class ChatDetailViewModel(
     private val _otherUser = MutableStateFlow<ChatUser?>(null)
     val otherUser: StateFlow<ChatUser?> = _otherUser
 
-    private var messagesJob: Job? = null
+    private val _isBlocked = MutableStateFlow(false)
+    val isBlocked: StateFlow<Boolean> = _isBlocked
 
-    fun onMessageInputChanged(text: String) {
-        _messageInput.value = text
-    }
+    private val _isBlockedByOther = MutableStateFlow(false)
+    val isBlockedByOther: StateFlow<Boolean> = _isBlockedByOther
+
+    private val _actionDone = MutableStateFlow<String?>(null)
+    val actionDone: StateFlow<String?> = _actionDone
+
+    private var messagesJob: Job? = null
+    private var currentOtherUserId: String = ""
+
+    fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
+        currentOtherUserId = otherUserId
 
         viewModelScope.launch {
             val user = chatRepository.getUserData(otherUserId)
@@ -204,16 +181,16 @@ class ChatDetailViewModel(
                 username     = user?.username?.ifEmpty { user.email } ?: otherUserId,
                 profileImage = user?.profileImage ?: ""
             )
+            _isBlocked.value        = blockRepository.isBlocked(uid, otherUserId)
+            _isBlockedByOther.value = blockRepository.isBlockedByOther(uid, otherUserId)
         }
 
-        // Cancelamos el job anterior antes de crear uno nuevo
         messagesJob?.cancel()
         _messages.value = emptyList()
 
         messagesJob = viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
                 val sorted = msgs.sortedBy { it.timestamp }
-
                 val previousIds = _messages.value.map { it.id }.toSet()
                 val newIncoming = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
@@ -234,13 +211,13 @@ class ChatDetailViewModel(
                         }
                     }
                 }
-
                 _messages.value = sorted
             }
         }
     }
 
     fun sendMessage(otherUserId: String) {
+        if (_isBlocked.value || _isBlockedByOther.value) return
         val uid     = authRepository.currentUser?.uid ?: return
         val content = _messageInput.value.trim()
         if (content.isEmpty()) return
@@ -261,6 +238,39 @@ class ChatDetailViewModel(
             chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
     }
+
+    fun deleteConversation(otherUserId: String, onDone: () -> Unit) {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            chatRepository.deleteConversation(uid, otherUserId)
+            _actionDone.value = "chat_deleted"
+            onDone()
+        }
+    }
+
+    fun blockUser(otherUserId: String, onDone: () -> Unit) {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            // 1. Bloquear
+            blockRepository.blockUser(uid, otherUserId)
+            // 2. Borrar chat
+            chatRepository.deleteConversation(uid, otherUserId)
+            // 3. Borrar match y likes
+            _isBlocked.value = true
+            _actionDone.value = "user_blocked"
+            onDone()
+        }
+    }
+
+    fun unblockUser(otherUserId: String) {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            blockRepository.unblockUser(uid, otherUserId)
+            _isBlocked.value = false
+        }
+    }
+
+    fun clearActionDone() { _actionDone.value = null }
 
     override fun onCleared() {
         super.onCleared()

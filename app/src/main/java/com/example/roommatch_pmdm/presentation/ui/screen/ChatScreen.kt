@@ -11,8 +11,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -256,11 +261,19 @@ fun ChatDetailScreen(
     navController: NavController? = null,
     viewModel: ChatDetailViewModel = koinViewModel()
 ) {
-    val messages     by viewModel.messages.collectAsState()
-    val messageInput by viewModel.messageInput.collectAsState()
-    val currentUid   by viewModel.currentUserIdFlow.collectAsState()
-    val listState    = rememberLazyListState()
-    val otherUser    by viewModel.otherUser.collectAsState()
+    val messages        by viewModel.messages.collectAsState()
+    val messageInput    by viewModel.messageInput.collectAsState()
+    val currentUid      by viewModel.currentUserIdFlow.collectAsState()
+    val listState       = rememberLazyListState()
+    val otherUser       by viewModel.otherUser.collectAsState()
+    val isBlocked       by viewModel.isBlocked.collectAsState()
+    val isBlockedByOther by viewModel.isBlockedByOther.collectAsState()
+    val actionDone      by viewModel.actionDone.collectAsState()
+
+    var showMenu              by remember { mutableStateOf(false) }
+    var showDeleteDialog      by remember { mutableStateOf(false) }
+    var showBlockDialog       by remember { mutableStateOf(false) }
+    var showUnblockDialog     by remember { mutableStateOf(false) }
 
     LaunchedEffect(chatUserId) {
         viewModel.loadMessages(chatUserId)
@@ -268,9 +281,68 @@ fun ChatDetailScreen(
     }
 
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.lastIndex)
+        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+    }
+
+    LaunchedEffect(actionDone) {
+        if (actionDone != null) {
+            viewModel.clearActionDone()
+            navController?.popBackStack()
         }
+    }
+
+    // ── Diálogo borrar chat ────────────────────────────────────────────────
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Borrar conversación") },
+            text  = { Text("¿Borrar este chat? El otro usuario podrá escribirte de nuevo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    viewModel.deleteConversation(chatUserId) {}
+                }) { Text("Borrar", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // ── Diálogo bloquear ───────────────────────────────────────────────────
+    if (showBlockDialog) {
+        AlertDialog(
+            onDismissRequest = { showBlockDialog = false },
+            title = { Text("Bloquear usuario") },
+            text  = { Text("¿Bloquear a ${otherUser?.username}? No podrá contactarte ni verás su perfil. El chat se borrará.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showBlockDialog = false
+                    viewModel.blockUser(chatUserId) {}
+                }) { Text("Bloquear", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBlockDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // ── Diálogo desbloquear ────────────────────────────────────────────────
+    if (showUnblockDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnblockDialog = false },
+            title = { Text("Desbloquear usuario") },
+            text  = { Text("¿Desbloquear a ${otherUser?.username}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUnblockDialog = false
+                    viewModel.unblockUser(chatUserId)
+                }) { Text("Desbloquear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnblockDialog = false }) { Text("Cancelar") }
+            }
+        )
     }
 
     Scaffold(
@@ -287,7 +359,7 @@ fun ChatDetailScreen(
                         Surface(
                             modifier = Modifier.size(38.dp),
                             shape    = CircleShape,
-                            color = MaterialTheme.colorScheme.outline
+                            color    = MaterialTheme.colorScheme.outline
                         ) {
                             AsyncImage(
                                 model = otherUser?.profileImage
@@ -295,39 +367,83 @@ fun ChatDetailScreen(
                                     ?: "https://via.placeholder.com/38",
                                 contentDescription = null,
                                 contentScale       = ContentScale.Crop,
-                                modifier           = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
+                                modifier           = Modifier.fillMaxSize().clip(CircleShape)
                             )
                         }
-                        Text(
-                            text       = otherUser?.username ?: "Chat",
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 16.sp
-                        )
+                        Column {
+                            Text(
+                                text       = otherUser?.username ?: "Chat",
+                                fontWeight = FontWeight.Bold,
+                                fontSize   = 16.sp
+                            )
+                            if (isBlocked) {
+                                Text(
+                                    "Bloqueado",
+                                    fontSize = 11.sp,
+                                    color    = MaterialTheme.colorScheme.error
+                                )
+                            } else if (isBlockedByOther) {
+                                Text(
+                                    "No puedes enviar mensajes",
+                                    fontSize = 11.sp,
+                                    color    = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
                     if (navController != null) {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver"
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                    }
+                    DropdownMenu(
+                        expanded         = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Borrar conversación") },
+                            leadingIcon = {
+                                Icon(Icons.Default.DeleteOutline, contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error)
+                            },
+                            onClick = { showMenu = false; showDeleteDialog = true }
+                        )
+                        if (isBlocked) {
+                            DropdownMenuItem(
+                                text = { Text("Desbloquear usuario") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.LockOpen, contentDescription = null)
+                                },
+                                onClick = { showMenu = false; showUnblockDialog = true }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Bloquear usuario", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Block, contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error)
+                                },
+                                onClick = { showMenu = false; showBlockDialog = true }
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor    = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize().padding(innerPadding)
         ) {
             LazyColumn(
                 state    = listState,
@@ -339,40 +455,68 @@ fun ChatDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(messages, key = { it.id }) { message ->
-                    MessageBubble(
-                        message       = message,
-                        currentUserId = currentUid
-                    )
+                    MessageBubble(message = message, currentUserId = currentUid)
                 }
             }
 
             HorizontalDivider()
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment     = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value         = messageInput,
-                    onValueChange = { viewModel.onMessageInputChanged(it) },
-                    placeholder   = { Text("Escribe un mensaje...") },
-                    modifier      = Modifier.weight(1f),
-                    shape         = MaterialTheme.shapes.large,
-                    maxLines      = 4
-                )
-                IconButton(
-                    onClick = { viewModel.sendMessage(chatUserId) },
-                    enabled = messageInput.isNotBlank()
+            if (isBlocked) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color    = MaterialTheme.colorScheme.errorContainer
                 ) {
-                    Icon(
-                        imageVector        = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Enviar",
-                        tint               = if (messageInput.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    Text(
+                        "Has bloqueado a este usuario",
+                        modifier  = Modifier.padding(16.dp),
+                        color     = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center,
+                        style     = MaterialTheme.typography.bodyMedium
                     )
+                }
+            } else if (isBlockedByOther) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color    = MaterialTheme.colorScheme.errorContainer
+                ) {
+                    Text(
+                        "No puedes enviar mensajes a este usuario",
+                        modifier  = Modifier.padding(16.dp),
+                        color     = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center,
+                        style     = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value         = messageInput,
+                        onValueChange = { viewModel.onMessageInputChanged(it) },
+                        placeholder   = { Text("Escribe un mensaje...") },
+                        modifier      = Modifier.weight(1f),
+                        shape         = MaterialTheme.shapes.large,
+                        maxLines      = 4
+                    )
+                    IconButton(
+                        onClick  = { viewModel.sendMessage(chatUserId) },
+                        enabled  = messageInput.isNotBlank()
+                    ) {
+                        Icon(
+                            imageVector        = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Enviar",
+                            tint               = if (messageInput.isNotBlank())
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                    }
                 }
             }
         }
