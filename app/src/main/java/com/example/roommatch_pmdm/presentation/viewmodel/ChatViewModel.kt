@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.data.repositories.BlockRepository
 import com.example.roommatch_pmdm.data.repositories.ChatRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.ChatMessage
@@ -17,12 +18,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+
+private const val MAX_REALTIME_CHATS = 30
 
 class ChatListViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val blockRepository: BlockRepository,
 ) : ViewModel() {
 
     private val _chatUsers = MutableStateFlow<List<ChatUser>>(emptyList())
@@ -31,71 +38,106 @@ class ChatListViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    init { loadChats() }
+    private val _refreshTick = MutableStateFlow(0)
+    private var chatsJob: Job? = null
 
-    fun loadChats() {
-        val currentUserId = authRepository.currentUser?.uid ?: return
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                // Obtener todos los usuarios con los que hay conversación
-                val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
-                val activeIds  = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
-                val allUserIds = (matchedIds + activeIds).toList()
+    init { startObserving() }
 
-                // Para cada usuario, construir un Flow reactivo del último mensaje
-                // y combinarlo en una lista actualizada en tiempo real
-                if (allUserIds.isEmpty()) {
-                    _isLoading.value = false
-                    return@launch
-                }
+    fun refresh() { _refreshTick.value++ }
 
-                // Creamos un flow por usuario y los combinamos
-                val flows = allUserIds.map { userId ->
-                    chatRepository.getLastMessageFlow(currentUserId, userId)
-                        .combine(
-                            chatRepository.getUnreadCountFlow(currentUserId, userId)
-                        ) { lastMsg, unreadCount ->
-                            Triple(userId, lastMsg, unreadCount)
+    private fun startObserving() {
+        chatsJob?.cancel()
+        chatsJob = viewModelScope.launch {
+            val currentUserId = authRepository.currentUser?.uid ?: return@launch
+            _refreshTick
+                .flatMapLatest { _ ->
+                    flow {
+                        emit(emptyList<ChatUser>())
+                        _isLoading.value = true
+
+                        val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
+                        val activeIds  = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
+                        val allUserIds = (matchedIds + activeIds).toList()
+
+                        if (allUserIds.isEmpty()) {
+                            _isLoading.value = false
+                            emit(emptyList())
+                            return@flow
                         }
-                }
 
-                // Combinamos todos los flows en uno solo
-                kotlinx.coroutines.flow.combine(flows) { triples ->
-                    triples.mapNotNull { (userId, lastMsg, unreadCount) ->
-                        val user = chatRepository.getUserData(userId) ?: return@mapNotNull null
-                        ChatUser(
-                            id                   = userId,
-                            username             = user.username.ifEmpty { user.email },
-                            profileImage         = user.profileImage,
-                            lastMessage          = lastMsg?.content ?: "Toca para chatear",
-                            timestamp            = lastMsg?.timestamp ?: 0L,
-                            // isRead desde perspectiva del receptor (yo)
-                            // Si el último mensaje me lo enviaron a mí y no está leído → false
-                            isRead               = if (lastMsg?.recipientId == currentUserId)
-                                lastMsg.isRead
-                            else true,
-                            lastMessageSenderId  = lastMsg?.senderId ?: ""
+                        val blockedByMe   = blockRepository.getBlockedUserIds(currentUserId).toSet()
+                        val blockedByThem = blockRepository.getUsersWhoBlockedMe(currentUserId).toSet()
+                        val allBlocked    = blockedByMe + blockedByThem
+
+                        val filteredUserIds = allUserIds.filter { it !in allBlocked }
+
+                        val realtimeIds = allUserIds.take(MAX_REALTIME_CHATS)
+                        val staticIds   = allUserIds.drop(MAX_REALTIME_CHATS)
+
+                        val realtimeFlows = realtimeIds.map { userId ->
+                            combine(
+                                chatRepository.getLastMessageFlow(currentUserId, userId),
+                                chatRepository.getUnreadCountFlow(currentUserId, userId)
+                            ) { lastMsg, _ ->
+                                buildChatUser(currentUserId, userId, lastMsg)
+                            }
+                        }
+
+                        val staticFlow = flowOf(
+                            staticIds.mapNotNull { userId ->
+                                val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
+                                buildChatUser(currentUserId, userId, lastMsg)
+                            }
                         )
-                    }.sortedByDescending { it.timestamp }
-                }.collect { users ->
-                    _chatUsers.value = users
-                    _isLoading.value = false
-                }
 
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _isLoading.value = false
-            }
+                        val combinedFlow = if (realtimeFlows.isEmpty()) {
+                            staticFlow
+                        } else {
+                            combine(
+                                combine(realtimeFlows) { it.filterNotNull().toList() },
+                                staticFlow
+                            ) { realtimeList, staticList ->
+                                (realtimeList + staticList).sortedByDescending { it.timestamp }
+                            }
+                        }
+
+                        combinedFlow.collect { users ->
+                            _isLoading.value = false
+                            emit(users)
+                        }
+                    }
+                }
+                .collect { users -> _chatUsers.value = users }
         }
     }
 
-    fun refresh() { loadChats() }
+    private suspend fun buildChatUser(
+        currentUserId: String,
+        otherUserId: String,
+        lastMsg: ChatMessage?
+    ): ChatUser? {
+        val user = chatRepository.getUserData(otherUserId) ?: return null
+        return ChatUser(
+            id                  = otherUserId,
+            username            = user.username.ifEmpty { user.email },
+            profileImage        = user.profileImage,
+            lastMessage         = lastMsg?.content ?: "Toca para chatear",
+            timestamp           = lastMsg?.timestamp ?: 0L,
+            isRead              = lastMsg?.isRead ?: true,
+            lastMessageSenderId = lastMsg?.senderId ?: ""
+        )
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        chatsJob?.cancel()
+    }
 }
 
 class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
+    private val blockRepository: BlockRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -113,15 +155,24 @@ class ChatDetailViewModel(
     private val _otherUser = MutableStateFlow<ChatUser?>(null)
     val otherUser: StateFlow<ChatUser?> = _otherUser
 
-    private var messagesJob: Job? = null
+    private val _isBlocked = MutableStateFlow(false)
+    val isBlocked: StateFlow<Boolean> = _isBlocked
 
-    fun onMessageInputChanged(text: String) {
-        _messageInput.value = text
-    }
+    private val _isBlockedByOther = MutableStateFlow(false)
+    val isBlockedByOther: StateFlow<Boolean> = _isBlockedByOther
+
+    private val _actionDone = MutableStateFlow<String?>(null)
+    val actionDone: StateFlow<String?> = _actionDone
+
+    private var messagesJob: Job? = null
+    private var currentOtherUserId: String = ""
+
+    fun onMessageInputChanged(text: String) { _messageInput.value = text }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
+        currentOtherUserId = otherUserId
 
         viewModelScope.launch {
             val user = chatRepository.getUserData(otherUserId)
@@ -130,6 +181,8 @@ class ChatDetailViewModel(
                 username     = user?.username?.ifEmpty { user.email } ?: otherUserId,
                 profileImage = user?.profileImage ?: ""
             )
+            _isBlocked.value        = blockRepository.isBlocked(uid, otherUserId)
+            _isBlockedByOther.value = blockRepository.isBlockedByOther(uid, otherUserId)
         }
 
         messagesJob?.cancel()
@@ -138,7 +191,6 @@ class ChatDetailViewModel(
         messagesJob = viewModelScope.launch {
             chatRepository.getMessages(uid, otherUserId).collect { msgs ->
                 val sorted = msgs.sortedBy { it.timestamp }
-
                 val previousIds = _messages.value.map { it.id }.toSet()
                 val newIncoming = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
@@ -159,14 +211,14 @@ class ChatDetailViewModel(
                         }
                     }
                 }
-
                 _messages.value = sorted
             }
         }
     }
 
     fun sendMessage(otherUserId: String) {
-        val uid = authRepository.currentUser?.uid ?: return
+        if (_isBlocked.value || _isBlockedByOther.value) return
+        val uid     = authRepository.currentUser?.uid ?: return
         val content = _messageInput.value.trim()
         if (content.isEmpty()) return
         _messageInput.value = ""
@@ -186,6 +238,39 @@ class ChatDetailViewModel(
             chatRepository.markMessagesAsRead(currentUid, otherUserId)
         }
     }
+
+    fun deleteConversation(otherUserId: String, onDone: () -> Unit) {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            chatRepository.deleteConversation(uid, otherUserId)
+            _actionDone.value = "chat_deleted"
+            onDone()
+        }
+    }
+
+    fun blockUser(otherUserId: String, onDone: () -> Unit) {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            // 1. Bloquear
+            blockRepository.blockUser(uid, otherUserId)
+            // 2. Borrar chat
+            chatRepository.deleteConversation(uid, otherUserId)
+            // 3. Borrar match y likes
+            _isBlocked.value = true
+            _actionDone.value = "user_blocked"
+            onDone()
+        }
+    }
+
+    fun unblockUser(otherUserId: String) {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            blockRepository.unblockUser(uid, otherUserId)
+            _isBlocked.value = false
+        }
+    }
+
+    fun clearActionDone() { _actionDone.value = null }
 
     override fun onCleared() {
         super.onCleared()

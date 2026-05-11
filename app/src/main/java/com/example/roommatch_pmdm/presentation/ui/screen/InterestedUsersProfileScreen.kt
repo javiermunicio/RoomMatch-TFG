@@ -35,10 +35,8 @@ import org.koin.androidx.compose.koinViewModel
 
 private val RoomBlue  = Color(0xFF4A90D9)
 private val ChipColor = Color(0xFFEF7F7F)
-private val TextGray  = Color(0xFF888888)
-private val BgGray    = Color(0xFFF5F5F5)
 
-// ── ViewModel inline (simple, solo carga un usuario) ────────────────────────
+// ── ViewModel ─────────────────────────────────────────────────────────────────
 
 class InterestedUserProfileViewModel(
     private val userRepository: UserRepository
@@ -90,19 +88,21 @@ fun InterestedUsersProfileScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
+                // ── TopAppBar adaptada al tema ────────────────────────────────
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor    = Color.White,
-                    titleContentColor = RoomBlue
+                    containerColor         = MaterialTheme.colorScheme.surface,
+                    titleContentColor      = RoomBlue,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         bottomBar = {
-            // Botón de chat siempre visible en la parte inferior
             if (user != null) {
                 Surface(
                     modifier        = Modifier.fillMaxWidth(),
                     shadowElevation = 8.dp,
-                    color           = Color.White
+                    // ── bottom bar adaptada al tema ───────────────────────────
+                    color           = MaterialTheme.colorScheme.surface
                 ) {
                     Button(
                         onClick  = {
@@ -140,7 +140,12 @@ fun InterestedUsersProfileScreen(
             user == null -> Box(
                 modifier         = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center
-            ) { Text("Perfil no disponible", color = TextGray) }
+            ) {
+                Text(
+                    "Perfil no disponible",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
 
             else -> UserProfileContent(
                 user     = user!!,
@@ -150,18 +155,21 @@ fun InterestedUsersProfileScreen(
     }
 }
 
+// ── Contenido del perfil ──────────────────────────────────────────────────────
+
 @Composable
 private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(BgGray)
+            // ── fondo adaptado al tema ────────────────────────────────────────
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
         // ── Header ───────────────────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth(),
-            color           = Color.White,
+            color           = MaterialTheme.colorScheme.surface,
             shadowElevation = 2.dp
         ) {
             Column(
@@ -170,10 +178,11 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
             ) {
                 // Avatar
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(110.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFDDDDDD))
+                        // fondo del avatar adaptado al tema
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .border(3.dp, RoomBlue, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
@@ -188,8 +197,8 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
                         Icon(
                             Icons.Filled.Person,
                             contentDescription = null,
-                            tint               = Color(0xFFAAAAAA),
-                            modifier           = Modifier.size(52.dp)
+                            tint     = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(52.dp)
                         )
                     }
                 }
@@ -212,13 +221,13 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
                         Icon(
                             Icons.Filled.LocationOn,
                             contentDescription = null,
-                            tint               = TextGray,
-                            modifier           = Modifier.size(14.dp)
+                            tint     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
                             user.location,
                             style    = MaterialTheme.typography.bodySmall,
-                            color    = TextGray,
+                            color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.padding(start = 2.dp)
                         )
                     }
@@ -232,7 +241,7 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
         if (user.bio.isNotEmpty()) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                color           = Color.White,
+                color           = MaterialTheme.colorScheme.surface,
                 shape           = MaterialTheme.shapes.medium,
                 shadowElevation = 1.dp
             ) {
@@ -247,7 +256,7 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
                     Text(
                         user.bio,
                         style      = MaterialTheme.typography.bodyMedium,
-                        color      = Color(0xFF424242),
+                        color      = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 22.sp
                     )
                 }
@@ -259,7 +268,7 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
         if (user.budget > 0) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                color           = Color.White,
+                color           = MaterialTheme.colorScheme.surface,
                 shape           = MaterialTheme.shapes.medium,
                 shadowElevation = 1.dp
             ) {
@@ -276,7 +285,7 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
                         Text(
                             "Presupuesto máximo",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextGray
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                         Text(
                             "${user.budget}€/mes",
@@ -294,7 +303,7 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
         if (user.habits.isNotEmpty()) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                color           = Color.White,
+                color           = MaterialTheme.colorScheme.surface,
                 shape           = MaterialTheme.shapes.medium,
                 shadowElevation = 1.dp
             ) {
