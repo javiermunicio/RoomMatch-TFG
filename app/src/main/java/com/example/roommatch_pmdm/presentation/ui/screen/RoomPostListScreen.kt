@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.ui.unit.sp
 
 private val RoomBlue = Color(0xFF4A90D9)
+
 @Composable
 fun RoomPostListScreen(
     navController: NavController,
@@ -97,7 +98,7 @@ fun RoomPostListScreen(
                             Text(
                                 "¡Sé el primero en publicar!",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                             )
                         }
                     }
@@ -141,7 +142,7 @@ private fun FilterBar(
 ) {
     Surface(
         modifier        = Modifier.fillMaxWidth(),
-        color           = Color.White,
+        color           = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp
     ) {
         Column {
@@ -194,7 +195,7 @@ private fun FilterBar(
                         Icon(
                             Icons.Filled.Close,
                             contentDescription = "Limpiar filtros",
-                            tint     = Color.Gray,
+                            tint     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -231,7 +232,6 @@ private fun FilterBar(
                         }
                     )
 
-                    // Precio máximo y compañeros en la misma fila
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -279,6 +279,7 @@ private fun FilterBar(
         }
     }
 }
+
 @Composable
 fun RoomPostCard(
     post: RoomPost,
@@ -287,6 +288,18 @@ fun RoomPostCard(
     onClick: () -> Unit = {}
 ) {
     var showDialog by remember { mutableStateOf(false) }
+
+    // Colores semánticos del tema
+    val cardBg        = MaterialTheme.colorScheme.surface
+    val titleColor    = MaterialTheme.colorScheme.onSurface
+    val subtitleColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+    val pillBg        = MaterialTheme.colorScheme.primaryContainer
+    val pillText      = MaterialTheme.colorScheme.onPrimaryContainer
+    val chipBg        = MaterialTheme.colorScheme.surfaceVariant
+    val chipText      = MaterialTheme.colorScheme.onSurfaceVariant
+    val avatarBg      = MaterialTheme.colorScheme.primaryContainer
+    val avatarText    = MaterialTheme.colorScheme.onPrimaryContainer
+    val dividerColor  = MaterialTheme.colorScheme.outlineVariant
 
     if (showDialog) {
         AlertDialog(
@@ -306,7 +319,7 @@ fun RoomPostCard(
         modifier  = Modifier.fillMaxWidth().clickable { onClick() },
         shape     = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White)
+        colors    = CardDefaults.cardColors(containerColor = cardBg)
     ) {
         // ── Franja azul lateral + cabecera ────────────────────────────────
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -314,7 +327,7 @@ fun RoomPostCard(
             Box(
                 modifier = Modifier
                     .width(4.dp)
-                    .height(IntrinsicSize.Max)  // ← se adapta a la altura del contenido
+                    .height(IntrinsicSize.Max)
                     .background(RoomBlue)
             )
 
@@ -330,8 +343,9 @@ fun RoomPostCard(
                         text       = post.title,
                         style      = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color      = Color(0xFF1A1A1A),
-                        modifier = Modifier.weight(1f).padding(end = 8.dp)                    )
+                        color      = titleColor,
+                        modifier   = Modifier.weight(1f).padding(end = 8.dp)
+                    )
                     if (isOwner) {
                         IconButton(
                             onClick  = { showDialog = true },
@@ -354,14 +368,14 @@ fun RoomPostCard(
                     Icon(
                         Icons.Filled.LocationOn,
                         contentDescription = null,
-                        tint     = Color(0xFF888888),
+                        tint     = subtitleColor,
                         modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text  = "${post.address}, ${post.city}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF888888)
+                        color = subtitleColor
                     )
                 }
 
@@ -369,13 +383,13 @@ fun RoomPostCard(
 
                 // Precio en pill
                 Surface(
-                    color = Color(0xFFEBF4FF),
+                    color = pillBg,
                     shape = MaterialTheme.shapes.extraLarge
                 ) {
                     Text(
                         text       = "${post.price}€/mes",
                         modifier   = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                        color      = Color(0xFF0C447C),
+                        color      = pillText,
                         fontSize   = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -387,7 +401,7 @@ fun RoomPostCard(
                     Text(
                         text     = post.description,
                         style    = MaterialTheme.typography.bodySmall,
-                        color    = Color(0xFF666666),
+                        color    = subtitleColor,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -399,14 +413,18 @@ fun RoomPostCard(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (post.roommates > 0) {
                         InfoPill(
-                            icon  = Icons.Filled.Group,
-                            label = "${post.roommates} compañero${if (post.roommates != 1) "s" else ""}"
+                            icon      = Icons.Filled.Group,
+                            label     = "${post.roommates} compañero${if (post.roommates != 1) "s" else ""}",
+                            chipBg    = chipBg,
+                            chipText  = chipText
                         )
                     }
                     if (post.availableFrom.isNotEmpty()) {
                         InfoPill(
-                            icon  = Icons.Filled.CalendarToday,
-                            label = "Desde ${post.availableFrom}"
+                            icon      = Icons.Filled.CalendarToday,
+                            label     = "Desde ${post.availableFrom}",
+                            chipBg    = chipBg,
+                            chipText  = chipText
                         )
                     }
                 }
@@ -414,7 +432,7 @@ fun RoomPostCard(
         }
 
         // ── Footer ────────────────────────────────────────────────────────
-        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
+        HorizontalDivider(thickness = 0.5.dp, color = dividerColor)
         Row(
             modifier              = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -428,21 +446,21 @@ fun RoomPostCard(
                 Surface(
                     modifier = Modifier.size(22.dp),
                     shape    = CircleShape,
-                    color    = Color(0xFFEBF4FF)
+                    color    = avatarBg
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text     = post.ownerName.take(2).uppercase(),
-                            fontSize = 9.sp,
-                            color    = Color(0xFF0C447C),
+                            text       = post.ownerName.take(2).uppercase(),
+                            fontSize   = 9.sp,
+                            color      = avatarText,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
                 Text(
-                    text     = post.ownerName.ifEmpty { "Propietario" },
-                    style    = MaterialTheme.typography.labelSmall,
-                    color    = Color(0xFF888888)
+                    text  = post.ownerName.ifEmpty { "Propietario" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = subtitleColor
                 )
             }
 
@@ -472,10 +490,12 @@ fun RoomPostCard(
 @Composable
 private fun InfoPill(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String
+    label: String,
+    chipBg: Color,
+    chipText: Color
 ) {
     Surface(
-        color = Color(0xFFF5F5F5),
+        color = chipBg,
         shape = MaterialTheme.shapes.extraLarge
     ) {
         Row(
@@ -490,9 +510,9 @@ private fun InfoPill(
                 modifier = Modifier.size(12.dp)
             )
             Text(
-                text     = label,
+                text  = label,
                 fontSize = 11.sp,
-                color    = Color(0xFF555555)
+                color = chipText
             )
         }
     }

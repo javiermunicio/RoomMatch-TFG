@@ -9,7 +9,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.*
@@ -28,25 +30,31 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.ProfileViewModel
+import com.example.roommatch_pmdm.presentation.viewmodel.ThemeViewModel
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.foundation.clickable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
+import androidx.activity.ComponentActivity
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.ui.platform.LocalContext
+import org.koin.androidx.viewmodel.ext.android.getViewModel
 
 private val RoomBlue  = Color(0xFF4A90D9)
 private val RoomRed   = Color(0xFFF26B6B)
 private val ChipColor = Color(0xFFEF7F7F)
-// MaterialTheme.colorScheme.surfaceVariant replaced by MaterialTheme.colorScheme.surfaceVariant
-// MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) replaced by MaterialTheme.colorScheme.onSurface.copy(alpha=0.6f)
 
 @Composable
 fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
-    // --- Estado del ViewModel ---
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
+    val themeViewModel: ThemeViewModel = activity.getViewModel()
+    val isDark by themeViewModel.isDarkTheme.collectAsState()
+
     val isEditing    by viewModel.isEditing.collectAsState()
     val isLoading    by viewModel.isLoading.collectAsState()
     val isSaved      by viewModel.isSaved.collectAsState()
@@ -69,12 +77,10 @@ fun ProfileScreen(
     var newTrait         by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // Snackbar al guardar
     LaunchedEffect(isSaved) {
         if (isSaved) viewModel.clearSaved()
     }
 
-    // --- Dialog logout ---
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -146,7 +152,6 @@ fun ProfileScreen(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
-                    // Overlay de cámara cuando está en modo edición
                     if (isEditing) {
                         Box(
                             modifier = Modifier
@@ -195,7 +200,6 @@ fun ProfileScreen(
             }
         }
 
-        // Mensaje de error
         errorMessage?.let { msg ->
             Text(
                 text     = msg,
@@ -284,7 +288,7 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // --- Botón principal ---
+        // --- Botón principal Editar/Guardar ---
         Button(
             onClick  = {
                 if (isEditing) viewModel.saveProfile() else viewModel.toggleEditMode()
@@ -306,6 +310,31 @@ fun ProfileScreen(
                     fontSize   = 15.sp
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- Botón Modo Oscuro/Claro (debajo del botón principal) ---
+        OutlinedButton(
+            onClick  = { themeViewModel.toggleTheme() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(50.dp),
+            shape  = MaterialTheme.shapes.extraLarge,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = RoomBlue)
+        ) {
+            Icon(
+                imageVector = if (isDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text       = if (isDark) "Cambiar a modo claro" else "Cambiar a modo oscuro",
+                fontWeight = FontWeight.SemiBold,
+                fontSize   = 15.sp
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

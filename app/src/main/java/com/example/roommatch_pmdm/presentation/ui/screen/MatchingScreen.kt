@@ -48,12 +48,15 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.ui.draw.drawBehind
 
 @Composable
-fun MatchingScreen(navController: androidx.navigation.NavController? = null, viewModel: MatchingViewModel = koinViewModel()) {
-    val userCards = viewModel.userCards.collectAsState()
-    val currentIndex = viewModel.currentIndex.collectAsState()
+fun MatchingScreen(
+    navController: androidx.navigation.NavController? = null,
+    viewModel: MatchingViewModel = koinViewModel()
+) {
+    val userCards      = viewModel.userCards.collectAsState()
+    val currentIndex   = viewModel.currentIndex.collectAsState()
     val showMatchPopup = viewModel.showMatchPopup.collectAsState()
-    val matchedUser = viewModel.matchedUser.collectAsState()
-    val isLoading = viewModel.isLoading.collectAsState()
+    val matchedUser    = viewModel.matchedUser.collectAsState()
+    val isLoading      = viewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -64,9 +67,9 @@ fun MatchingScreen(navController: androidx.navigation.NavController? = null, vie
     ) {
         Text(
             "RoomMatch",
-            style = MaterialTheme.typography.headlineMedium,
+            style      = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color      = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -78,12 +81,11 @@ fun MatchingScreen(navController: androidx.navigation.NavController? = null, vie
 
             key(currentIndex.value) {
                 UserCardDisplay(
-                    userCard = currentCard,
-                    onSwipeLeft = { viewModel.onPass() },
+                    userCard     = currentCard,
+                    onSwipeLeft  = { viewModel.onPass() },
                     onSwipeRight = { viewModel.onLike() }
                 )
             }
-
         } else {
             Text("No hay más usuarios disponibles")
         }
@@ -91,24 +93,23 @@ fun MatchingScreen(navController: androidx.navigation.NavController? = null, vie
         Spacer(modifier = Modifier.weight(1f))
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
-                onClick = { viewModel.onPass() },
-                modifier = Modifier
-                    .size(64.dp),
-                colors = ButtonDefaults.buttonColors(Color(0xFFE74C3C)),
-                shape = MaterialTheme.shapes.extraLarge
+                onClick  = { viewModel.onPass() },
+                modifier = Modifier.size(64.dp),
+                colors   = ButtonDefaults.buttonColors(Color(0xFFE74C3C)),
+                shape    = MaterialTheme.shapes.extraLarge
             ) {
                 Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White)
             }
 
             Button(
-                onClick = { viewModel.onLike() },
+                onClick  = { viewModel.onLike() },
                 modifier = Modifier.size(64.dp),
-                colors = ButtonDefaults.buttonColors(Color(0xFF2ECC71)),
-                shape = MaterialTheme.shapes.extraLarge
+                colors   = ButtonDefaults.buttonColors(Color(0xFF2ECC71)),
+                shape    = MaterialTheme.shapes.extraLarge
             ) {
                 Icon(Icons.Filled.Favorite, contentDescription = null, tint = Color.White)
             }
@@ -126,51 +127,59 @@ fun MatchingScreen(navController: androidx.navigation.NavController? = null, vie
 
 @Composable
 fun UserCardDisplay(
-    userCard: UserCard,
-    onSwipeLeft: () -> Unit,
+    userCard:     UserCard,
+    onSwipeLeft:  () -> Unit,
     onSwipeRight: () -> Unit
 ) {
-    val cardBlue    = Color(0xFF4A90D9)
-    val chipPinkBg  = Color(0xFFFBEAF0)
-    val chipPinkFg  = Color(0xFF993556)
-    val chipBlueBg  = Color(0xFFE6F1FB)
-    val chipBlueFg  = Color(0xFF185FA5)
-    val budgetBg    = Color(0xFFEAF3DE)
-    val budgetFg    = Color(0xFF3B6D11)
+    val cardBlue   = Color(0xFF4A90D9)
+    val chipPinkBg = Color(0xFFFBEAF0)
+    val chipPinkFg = Color(0xFF993556)
+    val chipBlueBg = Color(0xFFE6F1FB)
+    val chipBlueFg = Color(0xFF185FA5)
 
     Card(
-        modifier = Modifier
+        modifier  = Modifier
             .fillMaxWidth()
             .swipeableCard(
                 onSwipeLeft  = onSwipeLeft,
                 onSwipeRight = onSwipeRight
             ),
-        shape = MaterialTheme.shapes.large,
+        shape     = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(8.dp),
-        colors = CardDefaults.cardColors(
+        colors    = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column {
 
-            // ── Foto + nombre superpuesto ─────────────────────────────────
+            // ── Foto + nombre/ubicación superpuestos ──────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(260.dp)
             ) {
+                // Foto de fondo
                 AsyncImage(
-                    model        = userCard.profileImage.ifEmpty { "https://via.placeholder.com/400x260" },
+                    model              = userCard.profileImage.ifEmpty { "https://via.placeholder.com/400x260" },
                     contentDescription = "${userCard.username}, ${userCard.age}",
-                    modifier     = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    modifier           = Modifier.fillMaxSize(),
+                    contentScale       = ContentScale.Crop
                 )
-                Text(
-                    "📍 ${userCard.location}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+                // Gradiente oscuro en la parte inferior para que el texto sea legible
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .align(Alignment.BottomStart)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f))
+                            )
+                        )
                 )
-                // Nombre + ubicación encima del gradiente
+
+                // Nombre + ubicación encima del gradiente — ÚNICO Text de localización
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -204,7 +213,7 @@ fun UserCardDisplay(
                 }
             }
 
-            // ── Cuerpo de la tarjeta ──────────────────────────────────────
+            // ── Cuerpo de la tarjeta ──────────────────────────────────────────
             Column(
                 modifier            = Modifier
                     .fillMaxWidth()
@@ -214,11 +223,7 @@ fun UserCardDisplay(
 
                 // Bio
                 if (userCard.bio.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .drawBehind { /* borde izquierdo azul */ }
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         Box(
                             modifier = Modifier
                                 .width(3.dp)
@@ -229,13 +234,13 @@ fun UserCardDisplay(
                         Text(
                             text       = userCard.bio,
                             fontSize   = 13.sp,
-                            color      = Color(0xFF555555),
+                            color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
                             lineHeight = 19.sp,
                             maxLines   = 3,
                             overflow   = TextOverflow.Ellipsis
                         )
                     }
-                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 }
 
                 // Hábitos / Personalidad
@@ -243,9 +248,9 @@ fun UserCardDisplay(
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             "Personalidad",
-                            fontSize    = 11.sp,
-                            fontWeight  = FontWeight.Medium,
-                            color       = Color(0xFF999999),
+                            fontSize      = 11.sp,
+                            fontWeight    = FontWeight.Medium,
+                            color         = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             letterSpacing = 0.06.sp
                         )
                         FlowRow(
@@ -259,10 +264,10 @@ fun UserCardDisplay(
                                     border = BorderStroke(0.5.dp, Color(0xFFED93B1))
                                 ) {
                                     Text(
-                                        text     = habit,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        color    = chipPinkFg,
-                                        fontSize = 12.sp,
+                                        text       = habit,
+                                        modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        color      = chipPinkFg,
+                                        fontSize   = 12.sp,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
@@ -276,9 +281,9 @@ fun UserCardDisplay(
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             "Preferencias",
-                            fontSize    = 11.sp,
-                            fontWeight  = FontWeight.Medium,
-                            color       = Color(0xFF999999),
+                            fontSize      = 11.sp,
+                            fontWeight    = FontWeight.Medium,
+                            color         = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             letterSpacing = 0.06.sp
                         )
                         FlowRow(
@@ -292,10 +297,10 @@ fun UserCardDisplay(
                                     border = BorderStroke(0.5.dp, Color(0xFF85B7EB))
                                 ) {
                                     Text(
-                                        text     = pref,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        color    = chipBlueFg,
-                                        fontSize = 12.sp,
+                                        text       = pref,
+                                        modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        color      = chipBlueFg,
+                                        fontSize   = 12.sp,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
@@ -307,19 +312,23 @@ fun UserCardDisplay(
         }
     }
 }
-@Composable
-fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: androidx.navigation.NavController? = null) {
-    val primaryBlue   = Color(0xFF1E88E5)
-    val warmBeige     = Color(0xFFFFF8F0)
-    val roofBrown     = Color(0xFF8D6E63)
-    val wallCream     = Color(0xFFFFF3E0)
-    val accentGold    = Color(0xFFFFA000)
 
-    // Animación de escala al aparecer
+@Composable
+fun MatchPopup(
+    userCard:      UserCard,
+    onDismiss:     () -> Unit,
+    navController: androidx.navigation.NavController? = null
+) {
+    val primaryBlue = Color(0xFF1E88E5)
+    val warmBeige   = Color(0xFFFFF8F0)
+    val roofBrown   = Color(0xFF8D6E63)
+    val wallCream   = Color(0xFFFFF3E0)
+    val accentGold  = Color(0xFFFFA000)
+
     val scale = remember { Animatable(0.6f) }
     LaunchedEffect(Unit) {
         scale.animateTo(
-            targetValue = 1f,
+            targetValue   = 1f,
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
                 stiffness    = Spring.StiffnessMedium
@@ -329,10 +338,10 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties       = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Box(
-            modifier = Modifier
+            modifier         = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.6f)),
             contentAlignment = Alignment.Center
@@ -343,10 +352,10 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
                     .padding(horizontal = 24.dp)
                     .fillMaxWidth()
             ) {
-                // ── Tejado ────────────────────────────────────────────────
+                // Tejado
                 HousRoofShape(roofBrown, accentGold)
 
-                // ── Cuerpo de la tarjeta ──────────────────────────────────
+                // Cuerpo de la tarjeta
                 Column(
                     modifier = Modifier
                         .padding(top = 48.dp)
@@ -357,54 +366,54 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
                         .padding(bottom = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(Modifier.height(52.dp)) // espacio para el avatar
+                    Spacer(Modifier.height(52.dp))
 
-                    // Título
                     Text(
                         "🏠 ¡Nueva conexión!",
-                        fontSize = 22.sp,
+                        fontSize   = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = roofBrown,
+                        color      = roofBrown,
                         letterSpacing = 0.5.sp
                     )
                     Text(
                         "Compartid algo más que paredes",
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                     )
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), thickness = 1.dp)
+                    HorizontalDivider(
+                        color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                        thickness = 1.dp
+                    )
                     Spacer(Modifier.height(14.dp))
 
-                    // Nombre y ubicación
                     Text(
                         userCard.username,
-                        fontSize = 20.sp,
+                        fontSize   = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color      = MaterialTheme.colorScheme.onSurface
                     )
                     if (userCard.location.isNotBlank()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp)
+                            modifier          = Modifier.padding(top = 2.dp)
                         ) {
                             Text("📍", fontSize = 12.sp)
                             Spacer(Modifier.width(3.dp))
                             Text(
                                 userCard.location,
                                 fontSize = 13.sp,
-                                color = Color(0xFF8D6E63)
+                                color    = Color(0xFF8D6E63)
                             )
                         }
                     }
 
-                    // Hábitos
                     if (userCard.habits.isNotEmpty()) {
                         Spacer(Modifier.height(14.dp))
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier              = Modifier.fillMaxWidth()
                         ) {
                             userCard.habits.take(4).forEach { habit ->
                                 Surface(
@@ -425,20 +434,17 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
 
                     Spacer(Modifier.height(22.dp))
 
-                    // Botones
                     Button(
-                        onClick = {
+                        onClick  = {
                             onDismiss()
                             navController?.navigate(
                                 com.example.roommatch_pmdm.presentation.navigation.Screen.ChatDetail
                                     .createRoute(userCard.id)
                             )
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape  = RoundedCornerShape(50),
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryBlue)
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape    = RoundedCornerShape(50),
+                        colors   = ButtonDefaults.buttonColors(containerColor = primaryBlue)
                     ) {
                         Text("💬 Enviar mensaje", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
@@ -446,12 +452,10 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
                     Spacer(Modifier.height(10.dp))
 
                     OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp),
-                        shape  = RoundedCornerShape(50),
-                        border = BorderStroke(1.5.dp, roofBrown.copy(alpha = 0.5f))
+                        onClick  = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(46.dp),
+                        shape    = RoundedCornerShape(50),
+                        border   = BorderStroke(1.5.dp, roofBrown.copy(alpha = 0.5f))
                     ) {
                         Text(
                             "Seguir explorando",
@@ -462,14 +466,14 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
                     }
                 }
 
-                // ── Avatar flotante centrado sobre el cuerpo ──────────────
+                // Avatar flotante
                 Surface(
                     modifier = Modifier
                         .size(90.dp)
                         .align(Alignment.TopCenter)
                         .offset(y = 10.dp)
                         .border(4.dp, wallCream, CircleShape),
-                    shape = CircleShape,
+                    shape           = CircleShape,
                     shadowElevation = 8.dp
                 ) {
                     AsyncImage(
@@ -480,9 +484,9 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
                     )
                 }
 
-                // ── Estrella decorativa dorada ────────────────────────────
+                // Estrella decorativa
                 Surface(
-                    modifier  = Modifier
+                    modifier = Modifier
                         .size(28.dp)
                         .align(Alignment.TopCenter)
                         .offset(x = 38.dp, y = 8.dp),
@@ -498,33 +502,23 @@ fun MatchPopup(userCard: UserCard, onDismiss: () -> Unit, navController: android
     }
 }
 
-// ── Tejado SVG dibujado con Canvas ────────────────────────────────────────────
 @Composable
 fun HousRoofShape(roofColor: Color, accentColor: Color) {
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp)
-            .padding(horizontal = 0.dp)
     ) {
         val w = size.width
         val h = size.height
         val path = Path().apply {
             moveTo(0f, h)
-            lineTo(w * 0.5f, 0f)   // pico central
+            lineTo(w * 0.5f, 0f)
             lineTo(w, h)
             close()
         }
         drawPath(path, roofColor)
-
-        // Línea de borde del tejado
-        drawPath(
-            path,
-            color     = accentColor,
-            style     = Stroke(width = 3f)
-        )
-
-        // Chimenea (pequeño rectángulo a la derecha del pico)
+        drawPath(path, color = accentColor, style = Stroke(width = 3f))
         drawRect(
             color   = roofColor.copy(red = roofColor.red * 0.85f),
             topLeft = Offset(w * 0.65f, h * 0.25f),
@@ -532,6 +526,7 @@ fun HousRoofShape(roofColor: Color, accentColor: Color) {
         )
     }
 }
+
 @Preview
 @Composable
 fun MatchingScreenPreview() {
