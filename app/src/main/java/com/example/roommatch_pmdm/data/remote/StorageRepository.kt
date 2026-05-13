@@ -24,7 +24,7 @@ class StorageRepository(private val context: Context) {
             stream.close()
 
             val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.Companion.FORM)
+                .setType(MultipartBody.FORM)
                 .addFormDataPart(
                     "file", "profile.jpg",
                     bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
