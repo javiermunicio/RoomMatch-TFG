@@ -10,6 +10,7 @@ import com.example.roommatch_pmdm.domain.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlin.String
 
 class OnboardingViewModel(
     private val authRepository: AuthRepository,
@@ -28,6 +29,9 @@ class OnboardingViewModel(
 
     private val _city = MutableStateFlow("")
     val city: StateFlow<String> = _city
+
+    private val _budget = MutableStateFlow("")
+    val budget: StateFlow<String> = _budget
 
     private val _bio = MutableStateFlow("")
     val bio: StateFlow<String> = _bio
@@ -60,6 +64,9 @@ class OnboardingViewModel(
 
     fun onCityChanged(v: String) {
         _city.value = v
+    }
+    fun onBudgetChanged(v: String){
+        _budget.value = v
     }
 
     fun onBioChanged(v: String) {
@@ -102,6 +109,9 @@ class OnboardingViewModel(
                 }
                 if (_city.value.isBlank()) {
                     stepError.value = "La ciudad es obligatoria"; return
+                }
+                if (_budget.value.isBlank()) {
+                    stepError.value = "El presupuesto es obligatorio"; return
                 }
             }
         }
