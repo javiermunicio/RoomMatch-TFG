@@ -1,15 +1,15 @@
-package com.example.roommatch_pmdm.data.repositories
+package com.example.roommatch_pmdm.data.remote
 
 import android.content.Context
 import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class StorageRepository(private val context: Context) {
 
@@ -24,7 +24,7 @@ class StorageRepository(private val context: Context) {
             stream.close()
 
             val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
+                .setType(MultipartBody.Companion.FORM)
                 .addFormDataPart(
                     "file", "profile.jpg",
                     bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())

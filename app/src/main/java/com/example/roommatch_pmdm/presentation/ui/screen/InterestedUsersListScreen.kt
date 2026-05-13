@@ -18,58 +18,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.roommatch_pmdm.data.repositories.InterestRepository
-import com.example.roommatch_pmdm.data.repositories.UserRepository
-import com.example.roommatch_pmdm.domain.model.Interest
-import com.example.roommatch_pmdm.domain.model.User
+import com.example.roommatch_pmdm.domain.model.InterestedUserItem
 import com.example.roommatch_pmdm.presentation.navigation.Screen
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import com.example.roommatch_pmdm.presentation.viewmodel.InterestedUsersListViewModel
 import org.koin.androidx.compose.koinViewModel
 
 private val RoomBlue = Color(0xFF4A90D9)
-
-// ── Data class combinada ──────────────────────────────────────────────────────
-
-data class InterestedUserItem(
-    val interest: Interest,
-    val user: User?
-)
-
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-class InterestedUsersListViewModel(
-    private val interestRepository: InterestRepository,
-    private val userRepository: UserRepository
-) : ViewModel() {
-
-    private val _items = MutableStateFlow<List<InterestedUserItem>>(emptyList())
-    val items: StateFlow<List<InterestedUserItem>> = _items
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
-
-    fun loadInterests(postId: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            interestRepository.getInterestedUsersFlow(postId).collect { interests ->
-                _items.value = interests.map { interest ->
-                    val user = userRepository.getUser(interest.interestedUserId).getOrNull()
-                    InterestedUserItem(interest, user)
-                }
-                _isLoading.value = false
-            }
-        }
-    }
-}
-
-// ── Screen ────────────────────────────────────────────────────────────────────
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InterestedUsersListScreen(
