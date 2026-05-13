@@ -34,9 +34,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.viewmodel.EditRoomPostViewModel
 import org.koin.androidx.compose.koinViewModel
-
-private val RoomBlue     = Color(0xFF4A90D9)
-private val RoomBlueSoft = Color(0xFFEBF4FF)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
+import com.example.roommatch_pmdm.ui.theme.RoomBlueSoft
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

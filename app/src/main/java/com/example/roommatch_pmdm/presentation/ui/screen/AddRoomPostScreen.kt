@@ -35,10 +35,9 @@ import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.AddRoomPostViewModel
 import org.koin.androidx.compose.koinViewModel
-
-private val RoomBlue     = Color(0xFF4A90D9)
-private val RoomBlueSoft = Color(0xFFEBF4FF)
-private val SuccessGreen = Color(0xFF2ECC71)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
+import com.example.roommatch_pmdm.ui.theme.RoomBlueSoft
+import com.example.roommatch_pmdm.ui.theme.RoomGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

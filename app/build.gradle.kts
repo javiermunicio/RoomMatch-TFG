@@ -7,10 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.roommatch_pmdm"
-    compileSdk {
-        version = release(36)
-    }
-
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.example.roommatch_pmdm"
         minSdk = 24

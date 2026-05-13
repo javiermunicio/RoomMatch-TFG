@@ -27,9 +27,7 @@ import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.OnboardingViewModel
 import org.koin.androidx.compose.koinViewModel
-
-private val RoomBlue = Color(0xFF4A90D9)
-private val ChipSelected = Color(0xFF4A90D9)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
 
 @Composable
 fun OnboardingScreen(
@@ -288,7 +286,7 @@ private fun StepThree(viewModel: OnboardingViewModel) {
                 label    = { Text(habit) },
                 colors   = FilterChipDefaults.filterChipColors(
                     // seleccionado: azul + texto blanco
-                    selectedContainerColor = ChipSelected,
+                    selectedContainerColor = RoomBlue,
                     selectedLabelColor     = Color.White,
                     // no seleccionado: superficie del tema
                     containerColor         = MaterialTheme.colorScheme.surfaceVariant,
@@ -298,7 +296,7 @@ private fun StepThree(viewModel: OnboardingViewModel) {
                     enabled              = true,
                     selected             = selected,
                     borderColor          = MaterialTheme.colorScheme.outline,
-                    selectedBorderColor  = ChipSelected
+                    selectedBorderColor  = RoomBlue
                 )
             )
         }

@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
-import com.example.roommatch_pmdm.data.repositories.StorageRepository
+import com.example.roommatch_pmdm.data.remote.StorageRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
