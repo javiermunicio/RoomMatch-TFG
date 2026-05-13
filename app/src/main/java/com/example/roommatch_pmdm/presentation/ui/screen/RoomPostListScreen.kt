@@ -2,14 +2,12 @@ package com.example.roommatch_pmdm.presentation.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,9 +30,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,10 +41,8 @@ import com.example.roommatch_pmdm.domain.model.RoomPost
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.RoomPostListViewModel
 import org.koin.androidx.compose.koinViewModel
-
-private val RoomBlue      = Color(0xFF4A90D9)
-private val RoomBlueDark  = Color(0xFF2D6FAF)
-private val RoomBlueSoft  = Color(0xFFEBF4FF)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
+import com.example.roommatch_pmdm.ui.theme.RoomBlueSoft
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

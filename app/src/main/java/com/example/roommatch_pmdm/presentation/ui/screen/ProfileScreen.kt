@@ -40,11 +40,10 @@ import com.example.roommatch_pmdm.presentation.viewmodel.ProfileViewModel
 import com.example.roommatch_pmdm.presentation.viewmodel.ThemeViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.androidx.viewmodel.ext.android.getViewModel
-
-private val RoomBlue     = Color(0xFF4A90D9)
-private val RoomBlueSoft = Color(0xFFEBF4FF)
-private val RoomRed      = Color(0xFFE74C3C)
-private val ChipColor    = Color(0xFFEF7F7F)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
+import com.example.roommatch_pmdm.ui.theme.RoomBlueSoft
+import com.example.roommatch_pmdm.ui.theme.RoomRed
+import com.example.roommatch_pmdm.ui.theme.ChipColor
 
 @Composable
 fun ProfileScreen(

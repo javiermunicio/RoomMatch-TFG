@@ -27,9 +27,8 @@ import com.example.roommatch_pmdm.domain.model.User
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.InterestedUserProfileViewModel
 import org.koin.androidx.compose.koinViewModel
-
-private val RoomBlue  = Color(0xFF4A90D9)
-private val ChipColor = Color(0xFFEF7F7F)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
+import com.example.roommatch_pmdm.ui.theme.ChipColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

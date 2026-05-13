@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,8 +23,8 @@ import com.example.roommatch_pmdm.domain.model.InterestedUserItem
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.InterestedUsersListViewModel
 import org.koin.androidx.compose.koinViewModel
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
 
-private val RoomBlue = Color(0xFF4A90D9)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InterestedUsersListScreen(
