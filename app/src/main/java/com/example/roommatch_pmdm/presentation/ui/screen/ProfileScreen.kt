@@ -1,78 +1,77 @@
 package com.example.roommatch_pmdm.presentation.ui.screen
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Column
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.ComponentActivity
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.ProfileViewModel
 import com.example.roommatch_pmdm.presentation.viewmodel.ThemeViewModel
 import org.koin.androidx.compose.koinViewModel
-import androidx.compose.foundation.clickable
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import android.net.Uri
-import androidx.activity.ComponentActivity
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.ui.platform.LocalContext
 import org.koin.androidx.viewmodel.ext.android.getViewModel
 
-private val RoomBlue  = Color(0xFF4A90D9)
-private val RoomRed   = Color(0xFFF26B6B)
-private val ChipColor = Color(0xFFEF7F7F)
+private val RoomBlue     = Color(0xFF4A90D9)
+private val RoomBlueSoft = Color(0xFFEBF4FF)
+private val RoomRed      = Color(0xFFE74C3C)
+private val ChipColor    = Color(0xFFEF7F7F)
 
 @Composable
 fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
-    val context = LocalContext.current
+    val context  = LocalContext.current
     val activity = context as ComponentActivity
     val themeViewModel: ThemeViewModel = activity.getViewModel()
     val isDark by themeViewModel.isDarkTheme.collectAsState()
 
-    val isEditing    by viewModel.isEditing.collectAsState()
-    val isLoading    by viewModel.isLoading.collectAsState()
-    val isSaved      by viewModel.isSaved.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val username     by viewModel.username.collectAsState()
-    val age          by viewModel.age.collectAsState()
-    val location     by viewModel.location.collectAsState()
-    val bio          by viewModel.bio.collectAsState()
-    val budget       by viewModel.budget.collectAsState()
-    val habits       by viewModel.selectedHabits.collectAsState()
-    val profileImageUrl by viewModel.profileImageUrl.collectAsState()
+    val isEditing        by viewModel.isEditing.collectAsState()
+    val isLoading        by viewModel.isLoading.collectAsState()
+    val isSaved          by viewModel.isSaved.collectAsState()
+    val errorMessage     by viewModel.errorMessage.collectAsState()
+    val username         by viewModel.username.collectAsState()
+    val age              by viewModel.age.collectAsState()
+    val location         by viewModel.location.collectAsState()
+    val bio              by viewModel.bio.collectAsState()
+    val budget           by viewModel.budget.collectAsState()
+    val habits           by viewModel.selectedHabits.collectAsState()
+    val profileImageUrl  by viewModel.profileImageUrl.collectAsState()
     val isUploadingImage by viewModel.isUploadingImage.collectAsState()
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.uploadProfileImage(it) }
-    }
+    ) { uri: Uri? -> uri?.let { viewModel.uploadProfileImage(it) } }
 
     var newTrait         by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -81,19 +80,23 @@ fun ProfileScreen(
         if (isSaved) viewModel.clearSaved()
     }
 
+    // ── Diálogo logout ─────────────────────────────────────────────────────
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = { Text("Cerrar sesión") },
             text  = { Text("¿Estás seguro de que quieres cerrar sesión?") },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.logout()
-                    showLogoutDialog = false
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }) { Text("Cerrar sesión", color = MaterialTheme.colorScheme.error) }
+                Button(
+                    onClick = {
+                        viewModel.logout()
+                        showLogoutDialog = false
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = RoomRed)
+                ) { Text("Cerrar sesión", color = Color.White) }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) { Text("Cancelar") }
@@ -107,160 +110,170 @@ fun ProfileScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        // --- Header ---
+
+        // ── TopAppBar ──────────────────────────────────────────────────────
         Surface(
-            modifier       = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 2.dp
+            modifier        = Modifier.fillMaxWidth(),
+            shadowElevation = 4.dp,
+            color           = MaterialTheme.colorScheme.surface
         ) {
-            Column(
-                modifier             = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalAlignment  = Alignment.CenterHorizontally
+            Row(
+                modifier              = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier             = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment    = Alignment.CenterVertically
-                ) {
-                    Spacer(modifier = Modifier.size(48.dp))
-                    Text(
-                        text       = if (isEditing) "Edita tu Perfil" else "Mi Perfil",
-                        style      = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color      = RoomBlue,
-                        fontSize   = 18.sp
-                    )
+                Text(
+                    if (isEditing) "Editar perfil" else "Mi perfil",
+                    style      = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color      = MaterialTheme.colorScheme.primary
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // Botón modo oscuro/claro
+                    IconButton(onClick = { themeViewModel.toggleTheme() }) {
+                        Icon(
+                            imageVector        = if (isDark) Icons.Filled.LightMode
+                            else Icons.Filled.DarkMode,
+                            contentDescription = "Cambiar tema",
+                            tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                    // Botón logout
                     IconButton(onClick = { showLogoutDialog = true }) {
-                        Icon(Icons.Filled.ExitToApp, contentDescription = "Cerrar sesión", tint = RoomRed)
+                        Icon(
+                            Icons.Filled.ExitToApp,
+                            contentDescription = "Cerrar sesión",
+                            tint               = RoomRed
+                        )
                     }
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
+        // ── Header con avatar ──────────────────────────────────────────────
+        Surface(
+            modifier        = Modifier.fillMaxWidth(),
+            color           = MaterialTheme.colorScheme.surface,
+            shadowElevation = 1.dp
+        ) {
+            Column(
+                modifier            = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Avatar
                 Box(
-                    modifier = Modifier
-                        .size(120.dp)
+                    modifier         = Modifier
+                        .size(110.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                        .border(3.dp, RoomBlue, CircleShape)
-                        .clickable { if (isEditing) imagePickerLauncher.launch("image/*") },
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(3.dp, if (isEditing) RoomBlue else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
+                        .clickable(enabled = isEditing) { imagePickerLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = profileImageUrl.ifEmpty { "https://via.placeholder.com/120" },
+                        model              = profileImageUrl.ifEmpty { "https://via.placeholder.com/110" },
                         contentDescription = "Foto de perfil",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        contentScale       = ContentScale.Crop,
+                        modifier           = Modifier.fillMaxSize()
                     )
-                    if (isEditing) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.35f)),
-                            contentAlignment = Alignment.Center
+                    // Overlay cámara solo en modo edición
+                    Column() {
+                        AnimatedVisibility(
+                            visible = isEditing,
+                            enter = fadeIn(),
+                            exit = fadeOut()
                         ) {
-                            if (isUploadingImage) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(28.dp),
-                                    color = MaterialTheme.colorScheme.surface,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Filled.CameraAlt,
-                                    contentDescription = "Cambiar foto",
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(32.dp)
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.38f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isUploadingImage) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(28.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Filled.CameraAlt,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(30.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
+                // Nombre y edad
                 val displayAge = if (age.isNotEmpty()) ", $age años" else ""
                 Text(
-                    text       = "$username$displayAge",
+                    "$username$displayAge",
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color      = RoomBlue,
                     fontSize   = 20.sp
                 )
 
+                // Ubicación
                 if (location.isNotEmpty()) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier          = Modifier.padding(top = 4.dp)
                     ) {
-                        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
-                        Text(text = location, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.padding(start = 2.dp))
-                    }
-                }
-            }
-        }
-
-        errorMessage?.let { msg ->
-            Text(
-                text     = msg,
-                color = MaterialTheme.colorScheme.error,
-                style    = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- Chips de hábitos / rasgos ---
-        Surface(
-            modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shape           = MaterialTheme.shapes.medium,
-            shadowElevation = 1.dp
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    "Rasgos de personalidad",
-                    style      = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier   = Modifier.padding(bottom = 12.dp)
-                )
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement   = Arrangement.spacedBy(8.dp)
-                ) {
-                    habits.forEach { trait ->
-                        TraitChip(
-                            label    = trait,
-                            editable = isEditing,
-                            onRemove = { viewModel.toggleHabit(trait) }
+                        Icon(
+                            Icons.Filled.LocationOn,
+                            contentDescription = null,
+                            tint     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            location,
+                            style    = MaterialTheme.typography.bodySmall,
+                            color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(start = 2.dp)
                         )
                     }
                 }
 
-                if (isEditing) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier          = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                // Bio (solo vista)
+                if (bio.isNotEmpty() && !isEditing) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        bio,
+                        style     = MaterialTheme.typography.bodyMedium,
+                        color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        lineHeight = 20.sp
+                    )
+                }
+
+                // Presupuesto (solo vista)
+                if (budget.isNotEmpty() && budget != "0" && !isEditing) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(
+                        color = RoomBlueSoft,
+                        shape = MaterialTheme.shapes.extraLarge
                     ) {
-                        OutlinedTextField(
-                            value         = newTrait,
-                            onValueChange = { newTrait = it },
-                            label         = { Text("Añadir rasgo…", fontSize = 12.sp) },
-                            modifier      = Modifier.weight(1f),
-                            singleLine    = true
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(onClick = {
-                            if (newTrait.isNotBlank()) {
-                                viewModel.toggleHabit(newTrait.trim())
-                                newTrait = ""
-                            }
-                        }) {
-                            Icon(Icons.Filled.Add, contentDescription = "Añadir", tint = RoomBlue)
+                        Row(
+                            modifier          = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("💶", fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Hasta ${budget}€/mes",
+                                style      = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = RoomBlue
+                            )
                         }
                     }
                 }
@@ -269,109 +282,366 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- Campos editables ---
-        if (isEditing) {
+        // ── Formulario de edición (animado) ────────────────────────────────
+        AnimatedVisibility(
+            visible = isEditing,
+            enter   = expandVertically() + fadeIn(),
+            exit    = shrinkVertically() + fadeOut()
+        ) {
+            Column(
+                modifier            = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Sección datos personales
+                ProfileFormSection(title = "Datos personales") {
+                    ProfileFormField(
+                        value         = username,
+                        onValueChange = { viewModel.onUsernameChanged(it) },
+                        label         = "Nombre de usuario",
+                        icon          = Icons.Filled.Person
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        ProfileFormField(
+                            value         = age,
+                            onValueChange = { viewModel.onAgeChanged(it) },
+                            label         = "Edad",
+                            icon          = Icons.Filled.Cake,
+                            keyboardType  = KeyboardType.Number,
+                            modifier      = Modifier.weight(1f)
+                        )
+                        ProfileFormField(
+                            value         = budget,
+                            onValueChange = { viewModel.onBudgetChanged(it) },
+                            label         = "Presupuesto (€)",
+                            icon          = Icons.Filled.EuroSymbol,
+                            keyboardType  = KeyboardType.Number,
+                            modifier      = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    ProfileFormField(
+                        value         = location,
+                        onValueChange = { viewModel.onLocationChanged(it) },
+                        label         = "Ciudad",
+                        icon          = Icons.Filled.LocationOn
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    ProfileFormField(
+                        value         = bio,
+                        onValueChange = { viewModel.onBioChanged(it) },
+                        label         = "Sobre mí",
+                        icon          = Icons.Filled.Notes,
+                        minLines      = 3
+                    )
+                }
+
+                // Sección hábitos
+                ProfileFormSection(title = "Rasgos de personalidad") {
+                    // Chips existentes
+                    if (habits.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement   = Arrangement.spacedBy(8.dp),
+                            modifier              = Modifier.fillMaxWidth()
+                        ) {
+                            habits.forEach { trait ->
+                                EditableTraitChip(
+                                    label    = trait,
+                                    onRemove = { viewModel.toggleHabit(trait) }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    // Campo para añadir nuevo rasgo
+                    Row(
+                        modifier          = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value         = newTrait,
+                            onValueChange = { newTrait = it },
+                            label         = { Text("Añadir rasgo...", fontSize = 12.sp) },
+                            modifier      = Modifier.weight(1f),
+                            singleLine    = true,
+                            shape         = MaterialTheme.shapes.medium,
+                            colors        = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor   = RoomBlue,
+                                focusedLabelColor    = RoomBlue,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                            )
+                        )
+                        FilledTonalIconButton(
+                            onClick = {
+                                if (newTrait.isNotBlank()) {
+                                    viewModel.toggleHabit(newTrait.trim())
+                                    newTrait = ""
+                                }
+                            },
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = RoomBlueSoft,
+                                contentColor   = RoomBlue
+                            )
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = "Añadir rasgo")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+
+        // ── Chips de hábitos (solo vista, fuera de edición) ────────────────
+        AnimatedVisibility(
+            visible = !isEditing && habits.isNotEmpty(),
+            enter   = expandVertically() + fadeIn(),
+            exit    = shrinkVertically() + fadeOut()
+        ) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.surface,
+                color           = MaterialTheme.colorScheme.surface,
                 shape           = MaterialTheme.shapes.medium,
                 shadowElevation = 1.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    EditField("Nombre",      username, viewModel::onUsernameChanged)
-                    EditField("Edad",        age,      viewModel::onAgeChanged)
-                    EditField("Ubicación",   location, viewModel::onLocationChanged)
-                    EditField("Bio",         bio,      viewModel::onBioChanged)
-                    EditField("Presupuesto", budget,   viewModel::onBudgetChanged)
+                    Text(
+                        "Rasgos de personalidad",
+                        style      = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        modifier   = Modifier.padding(bottom = 12.dp)
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement   = Arrangement.spacedBy(8.dp)
+                    ) {
+                        habits.forEach { trait ->
+                            Surface(
+                                color = ChipColor,
+                                shape = MaterialTheme.shapes.extraLarge
+                            ) {
+                                Text(
+                                    trait,
+                                    modifier   = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    color      = Color.White,
+                                    fontSize   = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
                 }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        // --- Botón principal Editar/Guardar ---
-        Button(
-            onClick  = {
-                if (isEditing) viewModel.saveProfile() else viewModel.toggleEditMode()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(50.dp),
-            shape    = MaterialTheme.shapes.extraLarge,
-            colors   = ButtonDefaults.buttonColors(containerColor = RoomBlue),
-            enabled  = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(22.dp), color = MaterialTheme.colorScheme.surface, strokeWidth = 2.dp)
-            } else {
-                Text(
-                    text       = if (isEditing) "Guardar cambios" else "Editar Perfil",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize   = 15.sp
-                )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- Botón Modo Oscuro/Claro (debajo del botón principal) ---
-        OutlinedButton(
-            onClick  = { themeViewModel.toggleTheme() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(50.dp),
-            shape  = MaterialTheme.shapes.extraLarge,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = RoomBlue)
+        // ── Error ──────────────────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = errorMessage != null,
+            enter   = fadeIn(),
+            exit    = fadeOut()
         ) {
-            Icon(
-                imageVector = if (isDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text       = if (isDark) "Cambiar a modo claro" else "Cambiar a modo oscuro",
-                fontWeight = FontWeight.SemiBold,
-                fontSize   = 15.sp
-            )
+            errorMessage?.let {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    color    = MaterialTheme.colorScheme.errorContainer,
+                    shape    = MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        modifier              = Modifier.padding(12.dp),
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Warning,
+                            contentDescription = null,
+                            tint     = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        // ── Botones acción ─────────────────────────────────────────────────
+        Column(
+            modifier            = Modifier.padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Editar / Guardar
+            Button(
+                onClick  = {
+                    if (isEditing) viewModel.saveProfile() else viewModel.toggleEditMode()
+                },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape    = MaterialTheme.shapes.extraLarge,
+                colors   = ButtonDefaults.buttonColors(containerColor = RoomBlue),
+                enabled  = !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(20.dp),
+                        color       = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector        = if (isEditing) Icons.Filled.Save else Icons.Filled.Edit,
+                        contentDescription = null,
+                        modifier           = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        if (isEditing) "Guardar cambios" else "Editar perfil",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize   = 15.sp
+                    )
+                }
+            }
+
+            // Cancelar edición (solo visible al editar)
+            AnimatedVisibility(
+                visible = isEditing,
+                enter   = expandVertically() + fadeIn(),
+                exit    = shrinkVertically() + fadeOut()
+            ) {
+                OutlinedButton(
+                    onClick  = { viewModel.toggleEditMode() },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape    = MaterialTheme.shapes.extraLarge,
+                    colors   = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Cancelar", fontWeight = FontWeight.Medium)
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
+// ── Sección del formulario ────────────────────────────────────────────────────
+
 @Composable
-private fun TraitChip(label: String, editable: Boolean, onRemove: () -> Unit) {
-    Surface(color = ChipColor, shape = MaterialTheme.shapes.extraLarge) {
-        Row(
-            modifier          = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
+private fun ProfileFormSection(
+    title:   String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column {
+        Text(
+            title,
+            style      = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color      = RoomBlue,
+            modifier   = Modifier.padding(bottom = 8.dp, start = 2.dp)
+        )
+        Surface(
+            modifier        = Modifier.fillMaxWidth(),
+            color           = MaterialTheme.colorScheme.surface,
+            shape           = MaterialTheme.shapes.medium,
+            shadowElevation = 1.dp
         ) {
-            Text(text = label, color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            if (editable) {
-                Spacer(modifier = Modifier.width(4.dp))
-                IconButton(onClick = onRemove, modifier = Modifier.size(18.dp)) {
-                    Icon(Icons.Filled.Close, contentDescription = "Eliminar $label", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(12.dp))
-                }
+            Column(modifier = Modifier.padding(14.dp)) {
+                content()
             }
         }
     }
 }
 
+// ── Campo del formulario ──────────────────────────────────────────────────────
+
 @Composable
-private fun EditField(label: String, value: String, onChange: (String) -> Unit) {
+private fun ProfileFormField(
+    value:         String,
+    onValueChange: (String) -> Unit,
+    label:         String,
+    icon:          ImageVector,
+    modifier:      Modifier     = Modifier.fillMaxWidth(),
+    keyboardType:  KeyboardType = KeyboardType.Text,
+    minLines:      Int          = 1
+) {
     OutlinedTextField(
         value         = value,
-        onValueChange = onChange,
+        onValueChange = onValueChange,
+        modifier      = modifier,
         label         = { Text(label, fontSize = 12.sp) },
-        modifier      = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-        singleLine    = true
+        leadingIcon   = {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint     = if (value.isNotBlank()) RoomBlue
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier.size(18.dp)
+            )
+        },
+        minLines        = minLines,
+        singleLine      = minLines == 1,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        shape           = MaterialTheme.shapes.medium,
+        colors          = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor      = RoomBlue,
+            unfocusedBorderColor    = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+            focusedLabelColor       = RoomBlue,
+            focusedContainerColor   = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+        )
     )
 }
 
-@Preview(showBackground = true)
+// ── Chip editable con X ───────────────────────────────────────────────────────
+
 @Composable
-fun ProfileScreenPreview() {
-    ProfileScreen(navController = rememberNavController())
+private fun EditableTraitChip(label: String, onRemove: () -> Unit) {
+    Surface(
+        color = ChipColor,
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Row(
+            modifier          = Modifier.padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                label,
+                color      = Color.White,
+                fontSize   = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+            IconButton(
+                onClick  = onRemove,
+                modifier = Modifier.size(18.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Eliminar $label",
+                    tint     = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.size(11.dp)
+                )
+            }
+        }
+    }
 }

@@ -43,7 +43,6 @@ android {
 }
 
 dependencies {
-    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.insert-koin:koin-android:4.1.1")

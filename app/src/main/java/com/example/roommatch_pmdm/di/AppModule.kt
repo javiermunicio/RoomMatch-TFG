@@ -8,7 +8,6 @@ import com.example.roommatch_pmdm.presentation.ui.screen.InterestedUsersListView
 import com.example.roommatch_pmdm.presentation.viewmodel.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -17,7 +16,6 @@ val appModule = module {
     // Firebase
     single { FirebaseFirestore.getInstance() }
     single { FirebaseAuth.getInstance() }
-    single { FirebaseStorage.getInstance() }
 
     // Repositories
     single { StorageRepository(androidContext()) }
@@ -35,7 +33,7 @@ val appModule = module {
     factory { ListRoomPostsUseCase(get()) }
 
     // ViewModels
-    viewModel { ThemeViewModel(androidContext()) }          // ← NUEVO
+    viewModel { ThemeViewModel(androidContext()) }
     viewModel { LoginViewModel(get()) }
     viewModel { RegisterViewModel(get(), get()) }
     viewModel { MatchingViewModel(get(), get(),get(),get(), androidContext()) }
