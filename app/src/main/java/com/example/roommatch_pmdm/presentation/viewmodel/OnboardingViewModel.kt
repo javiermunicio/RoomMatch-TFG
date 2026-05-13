@@ -137,6 +137,7 @@ class OnboardingViewModel(
                 age = _age.value.toIntOrNull() ?: 0,
                 location = _city.value.trim(),
                 bio = _bio.value.trim(),
+                budget = _budget.value.toIntOrNull() ?: 0,
                 profileImage = _profileImageUrl.value,
                 habits = _selectedHabits.value,
                 createdAt = System.currentTimeMillis(),
