@@ -4,13 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
+import com.example.roommatch_pmdm.notifications.FcmTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository          // ← añadido
+    private val userRepository: UserRepository,
+    private val fcmTokenManager: FcmTokenManager
 ) : ViewModel() {
 
     private val _username        = MutableStateFlow("")
@@ -41,7 +43,6 @@ class RegisterViewModel(
 
     fun register() {
         viewModelScope.launch {
-            // Validaciones
             if (_username.value.isBlank() || _email.value.isBlank() ||
                 _password.value.isEmpty() || _confirmPassword.value.isEmpty()) {
                 _errorMessage.value = "Por favor completa todos los campos"
@@ -58,18 +59,14 @@ class RegisterViewModel(
 
             _isLoading.value = true
 
-            // 1. Crear usuario en Firebase Auth
-            val authResult = authRepository.register(_email.value.trim(), _password.value)
-            authResult.fold(
+            authRepository.register(_email.value.trim(), _password.value).fold(
                 onSuccess = { firebaseUser ->
-                    // 2. Guardar perfil en Firestore
                     userRepository.createUserIfNotExists(
                         userId   = firebaseUser.uid,
                         email    = firebaseUser.email ?: _email.value.trim(),
                         username = _username.value.trim()
                     )
-                    // No bloqueamos el registro si falla Firestore,
-                    // pero sí lo registramos para debug.
+                    fcmTokenManager.refreshAndSaveToken(firebaseUser.uid)
                     _registerSuccess.value = true
                     _errorMessage.value    = null
                 },
@@ -85,11 +82,11 @@ class RegisterViewModel(
     fun clearError() { _errorMessage.value = null }
 
     private fun mapFirebaseError(message: String?): String = when {
-        message == null                                          -> "Error desconocido"
+        message == null                                           -> "Error desconocido"
         "email address is already in use" in message.lowercase() -> "Este correo ya está registrado"
-        "badly formatted" in message                             -> "El formato del correo no es válido"
-        "password" in message.lowercase()                        -> "La contraseña no cumple los requisitos"
-        "network" in message.lowercase()                         -> "Error de conexión"
-        else                                                     -> "Error al crear la cuenta"
+        "badly formatted" in message                              -> "El formato del correo no es válido"
+        "password" in message.lowercase()                         -> "La contraseña no cumple los requisitos"
+        "network" in message.lowercase()                          -> "Error de conexión"
+        else                                                      -> "Error al crear la cuenta"
     }
 }

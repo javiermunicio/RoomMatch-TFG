@@ -13,6 +13,9 @@ import com.example.roommatch_pmdm.data.repositories.ChatRepository
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.domain.model.ChatMessage
 import com.example.roommatch_pmdm.domain.model.ChatUser
+import com.example.roommatch_pmdm.domain.usecase.BlockUserUseCase
+import com.example.roommatch_pmdm.domain.usecase.DeleteConversationUseCase
+import com.example.roommatch_pmdm.domain.usecase.SendMessageUseCase
 import com.example.roommatch_pmdm.notifications.NotificationHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -138,6 +141,9 @@ class ChatDetailViewModel(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
     private val blockRepository: BlockRepository,
+    private val sendMessageUseCase: SendMessageUseCase,
+    private val deleteConversationUseCase: DeleteConversationUseCase,
+    private val blockUserUseCase: BlockUserUseCase,
     private val context: Context
 ) : ViewModel() {
 
@@ -164,15 +170,19 @@ class ChatDetailViewModel(
     private val _actionDone = MutableStateFlow<String?>(null)
     val actionDone: StateFlow<String?> = _actionDone
 
+    // Flag para evitar notificaciones mientras el chat está abierto
+    private val _isChatActive = MutableStateFlow(false)
+
     private var messagesJob: Job? = null
-    private var currentOtherUserId: String = ""
 
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
+
+    fun onChatOpened() { _isChatActive.value = true }
+    fun onChatClosed() { _isChatActive.value = false }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
-        currentOtherUserId = otherUserId
 
         viewModelScope.launch {
             val user = chatRepository.getUserData(otherUserId)
@@ -194,7 +204,8 @@ class ChatDetailViewModel(
                 val previousIds = _messages.value.map { it.id }.toSet()
                 val newIncoming = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
-                if (_messages.value.isNotEmpty() && newIncoming.isNotEmpty()) {
+                // Solo notificar si hay mensajes nuevos Y el chat no está en primer plano
+                if (_messages.value.isNotEmpty() && newIncoming.isNotEmpty() && !_isChatActive.value) {
                     val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         ContextCompat.checkSelfPermission(
                             context, Manifest.permission.POST_NOTIFICATIONS
@@ -223,11 +234,9 @@ class ChatDetailViewModel(
         if (content.isEmpty()) return
         _messageInput.value = ""
         viewModelScope.launch {
-            try {
-                chatRepository.sendMessage(uid, otherUserId, content)
-            } catch (e: Exception) {
+            sendMessageUseCase(uid, otherUserId, content).onFailure {
                 _messageInput.value = content
-                e.printStackTrace()
+                it.printStackTrace()
             }
         }
     }
@@ -242,7 +251,7 @@ class ChatDetailViewModel(
     fun deleteConversation(otherUserId: String, onDone: () -> Unit) {
         val uid = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
-            chatRepository.deleteConversation(uid, otherUserId)
+            deleteConversationUseCase(uid, otherUserId)
             _actionDone.value = "chat_deleted"
             onDone()
         }
@@ -251,12 +260,8 @@ class ChatDetailViewModel(
     fun blockUser(otherUserId: String, onDone: () -> Unit) {
         val uid = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
-            // 1. Bloquear
-            blockRepository.blockUser(uid, otherUserId)
-            // 2. Borrar chat
-            chatRepository.deleteConversation(uid, otherUserId)
-            // 3. Borrar match y likes
-            _isBlocked.value = true
+            blockUserUseCase(uid, otherUserId)
+            _isBlocked.value  = true
             _actionDone.value = "user_blocked"
             onDone()
         }

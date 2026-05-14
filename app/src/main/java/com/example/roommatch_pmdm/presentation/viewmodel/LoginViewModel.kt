@@ -3,12 +3,14 @@ package com.example.roommatch_pmdm.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.notifications.FcmTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val fcmTokenManager: FcmTokenManager
 ) : ViewModel() {
 
     private val _username = MutableStateFlow("")
@@ -37,9 +39,9 @@ class LoginViewModel(
             }
             _isLoading.value = true
             val result = authRepository.login(_username.value.trim(), _password.value)
-            _isLoading.value = false
             result.fold(
-                onSuccess = {
+                onSuccess = { user ->
+                    fcmTokenManager.refreshAndSaveToken(user.uid)
                     _loginSuccess.value = true
                     _errorMessage.value = null
                 },
@@ -48,6 +50,7 @@ class LoginViewModel(
                     _loginSuccess.value = false
                 }
             )
+            _isLoading.value = false
         }
     }
 

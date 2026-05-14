@@ -261,23 +261,30 @@ fun ChatDetailScreen(
     navController: NavController? = null,
     viewModel: ChatDetailViewModel = koinViewModel()
 ) {
-    val messages        by viewModel.messages.collectAsState()
-    val messageInput    by viewModel.messageInput.collectAsState()
-    val currentUid      by viewModel.currentUserIdFlow.collectAsState()
-    val listState       = rememberLazyListState()
-    val otherUser       by viewModel.otherUser.collectAsState()
-    val isBlocked       by viewModel.isBlocked.collectAsState()
+    val messages         by viewModel.messages.collectAsState()
+    val messageInput     by viewModel.messageInput.collectAsState()
+    val currentUid       by viewModel.currentUserIdFlow.collectAsState()
+    val listState        = rememberLazyListState()
+    val otherUser        by viewModel.otherUser.collectAsState()
+    val isBlocked        by viewModel.isBlocked.collectAsState()
     val isBlockedByOther by viewModel.isBlockedByOther.collectAsState()
-    val actionDone      by viewModel.actionDone.collectAsState()
+    val actionDone       by viewModel.actionDone.collectAsState()
 
-    var showMenu              by remember { mutableStateOf(false) }
-    var showDeleteDialog      by remember { mutableStateOf(false) }
-    var showBlockDialog       by remember { mutableStateOf(false) }
-    var showUnblockDialog     by remember { mutableStateOf(false) }
+    var showMenu          by remember { mutableStateOf(false) }
+    var showDeleteDialog  by remember { mutableStateOf(false) }
+    var showBlockDialog   by remember { mutableStateOf(false) }
+    var showUnblockDialog by remember { mutableStateOf(false) }
 
+    // Avisar al ViewModel que el chat está en primer plano
     LaunchedEffect(chatUserId) {
+        viewModel.onChatOpened()
         viewModel.loadMessages(chatUserId)
         viewModel.markMessagesAsRead(chatUserId)
+    }
+
+    // Avisar al ViewModel cuando se abandona la pantalla
+    DisposableEffect(Unit) {
+        onDispose { viewModel.onChatClosed() }
     }
 
     LaunchedEffect(messages.size) {
@@ -350,9 +357,9 @@ fun ChatDetailScreen(
             TopAppBar(
                 title = {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.clickable {
+                        modifier              = Modifier.clickable {
                             navController?.navigate(Screen.InterestedUserProfile.createRoute(chatUserId))
                         }
                     ) {
@@ -362,7 +369,7 @@ fun ChatDetailScreen(
                             color    = MaterialTheme.colorScheme.outline
                         ) {
                             AsyncImage(
-                                model = otherUser?.profileImage
+                                model              = otherUser?.profileImage
                                     ?.ifEmpty { "https://via.placeholder.com/38" }
                                     ?: "https://via.placeholder.com/38",
                                 contentDescription = null,
@@ -408,27 +415,31 @@ fun ChatDetailScreen(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Borrar conversación") },
+                            text        = { Text("Borrar conversación") },
                             leadingIcon = {
-                                Icon(Icons.Default.DeleteOutline, contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error)
+                                Icon(
+                                    Icons.Default.DeleteOutline,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
                             },
                             onClick = { showMenu = false; showDeleteDialog = true }
                         )
                         if (isBlocked) {
                             DropdownMenuItem(
-                                text = { Text("Desbloquear usuario") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.LockOpen, contentDescription = null)
-                                },
-                                onClick = { showMenu = false; showUnblockDialog = true }
+                                text        = { Text("Desbloquear usuario") },
+                                leadingIcon = { Icon(Icons.Default.LockOpen, contentDescription = null) },
+                                onClick     = { showMenu = false; showUnblockDialog = true }
                             )
                         } else {
                             DropdownMenuItem(
-                                text = { Text("Bloquear usuario", color = MaterialTheme.colorScheme.error) },
+                                text        = { Text("Bloquear usuario", color = MaterialTheme.colorScheme.error) },
                                 leadingIcon = {
-                                    Icon(Icons.Default.Block, contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error)
+                                    Icon(
+                                        Icons.Default.Block,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
                                 },
                                 onClick = { showMenu = false; showBlockDialog = true }
                             )
@@ -442,9 +453,7 @@ fun ChatDetailScreen(
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             LazyColumn(
                 state    = listState,
                 modifier = Modifier
@@ -461,8 +470,8 @@ fun ChatDetailScreen(
 
             HorizontalDivider()
 
-            if (isBlocked) {
-                Surface(
+            when {
+                isBlocked -> Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color    = MaterialTheme.colorScheme.errorContainer
                 ) {
@@ -474,8 +483,8 @@ fun ChatDetailScreen(
                         style     = MaterialTheme.typography.bodyMedium
                     )
                 }
-            } else if (isBlockedByOther) {
-                Surface(
+
+                isBlockedByOther -> Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color    = MaterialTheme.colorScheme.errorContainer
                 ) {
@@ -487,8 +496,8 @@ fun ChatDetailScreen(
                         style     = MaterialTheme.typography.bodyMedium
                     )
                 }
-            } else {
-                Row(
+
+                else -> Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
@@ -505,8 +514,8 @@ fun ChatDetailScreen(
                         maxLines      = 4
                     )
                     IconButton(
-                        onClick  = { viewModel.sendMessage(chatUserId) },
-                        enabled  = messageInput.isNotBlank()
+                        onClick = { viewModel.sendMessage(chatUserId) },
+                        enabled = messageInput.isNotBlank()
                     ) {
                         Icon(
                             imageVector        = Icons.AutoMirrored.Filled.Send,
@@ -542,9 +551,7 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
             ),
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
     ) {
-        Column(
-            horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
-        ) {
+        Column(horizontalAlignment = if (isMine) Alignment.End else Alignment.Start) {
             Surface(
                 color = if (isMine) BubbleMe else BubbleOther,
                 shape = RoundedCornerShape(
@@ -566,21 +573,23 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
             if (timeText.isNotEmpty()) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    modifier          = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text     = timeText,
+                        text  = timeText,
                         fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     if (isMine) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector        = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Check,
                             contentDescription = if (message.isRead) "Leído" else "Enviado",
-                            modifier = Modifier.size(14.dp),
-                            // Azul si lo ha leído, gris si solo está enviado
-                            tint = if (message.isRead) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            modifier           = Modifier.size(14.dp),
+                            tint               = if (message.isRead)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
                     }
                 }
@@ -588,6 +597,7 @@ fun MessageBubble(message: ChatMessage, currentUserId: String) {
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

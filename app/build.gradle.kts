@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    implementation("com.google.firebase:firebase-messaging-ktx:24.0.0")
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.insert-koin:koin-android:4.1.1")

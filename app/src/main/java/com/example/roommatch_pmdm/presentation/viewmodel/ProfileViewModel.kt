@@ -7,6 +7,8 @@ import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.remote.StorageRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.User
+import com.example.roommatch_pmdm.domain.usecase.SaveProfileUseCase
+import com.example.roommatch_pmdm.domain.usecase.UploadProfileImageUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,7 +16,8 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val storageRepository: StorageRepository
+    private val saveProfileUseCase: SaveProfileUseCase,
+    private val uploadProfileImageUseCase: UploadProfileImageUseCase
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
@@ -124,7 +127,7 @@ class ProfileViewModel(
                 profileImage = _profileImageUrl.value,
                 updatedAt    = System.currentTimeMillis()
             )
-            userRepository.saveUser(updatedUser).fold(
+            saveProfileUseCase(updatedUser).fold(
                 onSuccess = {
                     _user.value      = updatedUser
                     _isEditing.value = false
@@ -141,17 +144,13 @@ class ProfileViewModel(
         val userId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isUploadingImage.value = true
-            storageRepository.uploadProfileImage(uri).fold(  // ← sin userId
+            val currentUser = _user.value ?: User(id = userId)
+            uploadProfileImageUseCase(uri, currentUser).fold(
                 onSuccess = { url ->
                     _profileImageUrl.value = url
-                    val updatedUser = (_user.value ?: User(id = userId))
-                        .copy(profileImage = url, updatedAt = System.currentTimeMillis())
-                    userRepository.saveUser(updatedUser)
-                    _user.value = updatedUser
+                    _user.value = currentUser.copy(profileImage = url, updatedAt = System.currentTimeMillis())
                 },
-                onFailure = {
-                    _errorMessage.value = "Error al subir la imagen"
-                }
+                onFailure = { _errorMessage.value = "Error al subir la imagen" }
             )
             _isUploadingImage.value = false
         }
