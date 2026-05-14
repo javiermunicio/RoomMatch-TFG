@@ -13,6 +13,8 @@ import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.User
 import com.example.roommatch_pmdm.domain.model.UserCard
+import com.example.roommatch_pmdm.domain.usecase.GetUsersToSwipeUseCase
+import com.example.roommatch_pmdm.domain.usecase.SaveLikeAndCheckMatchUseCase
 import com.example.roommatch_pmdm.notifications.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,11 +22,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 class MatchingViewModel(
-    private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository,
-    private val blockRepository: BlockRepository,
-    private val context: Context
+    private val getUsersToSwipeUseCase: GetUsersToSwipeUseCase,
+    private val saveLikeAndCheckMatchUseCase: SaveLikeAndCheckMatchUseCase
 ) : ViewModel() {
 
     private val _userCards = MutableStateFlow<List<UserCard>>(emptyList())
@@ -49,15 +49,7 @@ class MatchingViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val currentUser   = userRepository.getUser(currentUserId).getOrNull()
-                val blockedByMe   = blockRepository.getBlockedUserIds(currentUserId).toSet()
-                val blockedByThem = blockRepository.getUsersWhoBlockedMe(currentUserId).toSet()
-                val allBlocked    = blockedByMe + blockedByThem
-
-                val users = matchRepository.getUsersToSwipe(currentUserId)
-                    .filter { it.id !in allBlocked }
-
-                val cards = users.map { user ->
+                _userCards.value = getUsersToSwipeUseCase(currentUserId).map { user ->
                     UserCard(
                         id           = user.id,
                         username     = user.username,
@@ -68,21 +60,6 @@ class MatchingViewModel(
                         habits       = user.habits,
                         preferences  = user.preferences
                     )
-                }
-
-                _userCards.value = if (currentUser == null) {
-                    cards
-                } else {
-                    cards
-                        .map { card ->
-                            val score = computeCompatibilityScore(
-                                currentUser = currentUser,
-                                candidate   = users.first { it.id == card.id }
-                            )
-                            card to score
-                        }
-                        .sortedByDescending { (_, score) -> score }
-                        .map { (card, _) -> card }
                 }
             } finally {
                 _isLoading.value = false
@@ -138,23 +115,10 @@ class MatchingViewModel(
         val currentCard   = _userCards.value.getOrNull(_currentIndex.value) ?: return
 
         viewModelScope.launch {
-            val isMatch = matchRepository.saveLikeAndCheckMatch(currentUserId, currentCard.id)
+            val isMatch = saveLikeAndCheckMatchUseCase(currentUserId, currentCard.id, currentCard.username)
             if (isMatch) {
                 _matchedUser.value    = currentCard
                 _showMatchPopup.value = true
-
-                val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
-                } else true
-
-                if (canNotify) {
-                    NotificationHelper.showMatchNotification(
-                        context         = context,
-                        matchedUsername = currentCard.username
-                    )
-                }
             }
             moveToNextCard()
         }

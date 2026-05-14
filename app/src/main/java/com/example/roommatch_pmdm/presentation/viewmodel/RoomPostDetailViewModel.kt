@@ -13,17 +13,18 @@ import com.example.roommatch_pmdm.data.repositories.RoomPostRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.Interest
 import com.example.roommatch_pmdm.domain.model.RoomPost
+import com.example.roommatch_pmdm.domain.usecase.GetRoomPostByIdUseCase
+import com.example.roommatch_pmdm.domain.usecase.ToggleInterestUseCase
 import com.example.roommatch_pmdm.notifications.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class RoomPostDetailViewModel(
-    private val interestRepository: InterestRepository,
+    private val toggleInterestUseCase: ToggleInterestUseCase,
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository,
-    private val roomPostRepository: RoomPostRepository,
-    private val context: Context
+    private val getRoomPostByIdUseCase: GetRoomPostByIdUseCase,
+    private val interestRepository: InterestRepository
 ) : ViewModel() {
 
     private val _post = MutableStateFlow<RoomPost?>(null)
@@ -51,7 +52,7 @@ class RoomPostDetailViewModel(
         val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            roomPostRepository.getById(postId).fold(
+            getRoomPostByIdUseCase(postId).fold(
                 onSuccess = { roomPost ->
                     _post.value = roomPost
                     _isOwner.value = roomPost.ownerId == currentUserId
@@ -70,51 +71,20 @@ class RoomPostDetailViewModel(
 
     fun toggleInterest() {
         val currentUserId = authRepository.currentUser?.uid ?: return
-        val postId        = _post.value?.id ?: return
-        val postOwnerId   = _post.value?.ownerId ?: return
-        val postTitle     = _post.value?.title ?: ""
+        val post = _post.value ?: return
 
         viewModelScope.launch {
             _isLoading.value = true
-            if (_isInterested.value) {
-                interestRepository.removeInterest(currentUserId, postId).fold(
-                    onSuccess = {
-                        _isInterested.value   = false
-                        _successMessage.value = "Has retirado tu interés"
-                    },
-                    onFailure = { _errorMessage.value = "Error al retirar el interés" }
-                )
-            } else {
-                val username = userRepository.getUser(currentUserId).getOrNull()?.username ?: "Usuario"
-                val interest = Interest(
-                    postId             = postId,
-                    postOwnerId        = postOwnerId,
-                    interestedUserId   = currentUserId,
-                    interestedUsername = username,
-                    createdAt          = System.currentTimeMillis()
-                )
-                interestRepository.addInterest(interest).fold(
-                    onSuccess = {
-                        _isInterested.value   = true
-                        _successMessage.value = "¡El dueño del piso ha sido notificado de tu interés!"
-
-                        val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            ContextCompat.checkSelfPermission(
-                                context, Manifest.permission.POST_NOTIFICATIONS
-                            ) == PackageManager.PERMISSION_GRANTED
-                        } else true
-
-                        if (canNotify) {
-                            NotificationHelper.showInterestNotification(
-                                context            = context,
-                                interestedUsername = username,
-                                postTitle          = postTitle
-                            )
-                        }
-                    },
-                    onFailure = { _errorMessage.value = "Error al registrar el interés" }
-                )
-            }
+            toggleInterestUseCase(currentUserId, post, _isInterested.value).fold(
+                onSuccess = { newState ->
+                    _isInterested.value = newState
+                    _successMessage.value = if (newState)
+                        "¡El dueño del piso ha sido notificado de tu interés!"
+                    else
+                        "Has retirado tu interés"
+                },
+                onFailure = { _errorMessage.value = "Error al actualizar el interés" }
+            )
             _isLoading.value = false
         }
     }

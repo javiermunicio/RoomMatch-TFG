@@ -30,20 +30,30 @@ val appModule = module {
     factory { AddRoomPostUseCase(get()) }
     factory { DeleteRoomPostUseCase(get()) }
     factory { ListRoomPostsUseCase(get()) }
+    factory { SaveProfileUseCase(get()) }
+    factory { UploadProfileImageUseCase(get(), get()) }
+    factory { GetRoomPostByIdUseCase(get()) }
+    factory { UpdateRoomPostUseCase(get()) }
+    factory { ToggleInterestUseCase(get(), get(), androidContext()) }
+    factory { SendMessageUseCase(get()) }
+    factory { DeleteConversationUseCase(get()) }
+    factory { BlockUserUseCase(get(), get(), get()) }
+    factory { GetUsersToSwipeUseCase(get(), get(), get()) }
+    factory { SaveLikeAndCheckMatchUseCase(get(), androidContext()) }
 
     // ViewModels
     viewModel { ThemeViewModel(androidContext()) }
     viewModel { LoginViewModel(get()) }
     viewModel { RegisterViewModel(get(), get()) }
-    viewModel { MatchingViewModel(get(), get(), get(), get(), androidContext()) }
+    viewModel { MatchingViewModel(get(), get(), get()) }
     viewModel { ChatListViewModel(get(), get(), get(), get()) }
-    viewModel { ChatDetailViewModel(get(), get(), get(), androidContext()) }
-    viewModel { ProfileViewModel(get(), get(), get()) }
+    viewModel { ChatDetailViewModel(get(), get(), get(),get(), get(), get(), androidContext()) }
+    viewModel { ProfileViewModel(get(), get(), get(), get()) }
     viewModel { AddRoomPostViewModel(get(), get(), get()) }
     viewModel { RoomPostListViewModel(get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(get(), get(), get()) }
-    viewModel { RoomPostDetailViewModel(get(), get(), get(), get(), androidContext()) }
-    viewModel { EditRoomPostViewModel(get(), get(), get()) }
+    viewModel { RoomPostDetailViewModel(get(), get(), get(), get()) }
+    viewModel { EditRoomPostViewModel(get(), get(), get(), get()) }
     viewModel { InterestedUsersListViewModel(get(), get()) }
     viewModel { InterestedUserProfileViewModel(get()) }
 }

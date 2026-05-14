@@ -7,13 +7,16 @@ import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.remote.StorageRepository
 import com.example.roommatch_pmdm.data.repositories.RoomPostRepository
 import com.example.roommatch_pmdm.domain.model.RoomPost
+import com.example.roommatch_pmdm.domain.usecase.GetRoomPostByIdUseCase
+import com.example.roommatch_pmdm.domain.usecase.UpdateRoomPostUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class EditRoomPostViewModel(
     private val authRepository: AuthRepository,
-    private val roomPostRepository: RoomPostRepository,
+    private val getRoomPostByIdUseCase: GetRoomPostByIdUseCase,
+    private val updateRoomPostUseCase: UpdateRoomPostUseCase,
     private val storageRepository: StorageRepository
 ) : ViewModel() {
 
@@ -38,7 +41,7 @@ class EditRoomPostViewModel(
     fun loadPost(postId: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            roomPostRepository.getById(postId).fold(
+            getRoomPostByIdUseCase(postId).fold(
                 onSuccess = { _roomPost.value = it },
                 onFailure = { _validationError.value = "No se pudo cargar el anuncio" }
             )
@@ -106,7 +109,7 @@ class EditRoomPostViewModel(
             val updatedPost = post.copy(images = post.images + newUrls)
 
             // 3. Guardar a través del repositorio
-            val success = roomPostRepository.update(updatedPost)
+            val success = updateRoomPostUseCase(updatedPost)
             if (success) {
                 _isSaved.value = true
             } else {
