@@ -170,15 +170,19 @@ class ChatDetailViewModel(
     private val _actionDone = MutableStateFlow<String?>(null)
     val actionDone: StateFlow<String?> = _actionDone
 
+    // Flag para evitar notificaciones mientras el chat está abierto
+    private val _isChatActive = MutableStateFlow(false)
+
     private var messagesJob: Job? = null
-    private var currentOtherUserId: String = ""
 
     fun onMessageInputChanged(text: String) { _messageInput.value = text }
+
+    fun onChatOpened() { _isChatActive.value = true }
+    fun onChatClosed() { _isChatActive.value = false }
 
     fun loadMessages(otherUserId: String) {
         val uid = authRepository.currentUser?.uid ?: return
         _currentUserIdFlow.value = uid
-        currentOtherUserId = otherUserId
 
         viewModelScope.launch {
             val user = chatRepository.getUserData(otherUserId)
@@ -200,7 +204,8 @@ class ChatDetailViewModel(
                 val previousIds = _messages.value.map { it.id }.toSet()
                 val newIncoming = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
-                if (_messages.value.isNotEmpty() && newIncoming.isNotEmpty()) {
+                // Solo notificar si hay mensajes nuevos Y el chat no está en primer plano
+                if (_messages.value.isNotEmpty() && newIncoming.isNotEmpty() && !_isChatActive.value) {
                     val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         ContextCompat.checkSelfPermission(
                             context, Manifest.permission.POST_NOTIFICATIONS
@@ -229,14 +234,9 @@ class ChatDetailViewModel(
         if (content.isEmpty()) return
         _messageInput.value = ""
         viewModelScope.launch {
-            try {
-                sendMessageUseCase(uid, otherUserId, content).onFailure {
-                    _messageInput.value = content
-                    it.printStackTrace()
-                }
-            } catch (e: Exception) {
+            sendMessageUseCase(uid, otherUserId, content).onFailure {
                 _messageInput.value = content
-                e.printStackTrace()
+                it.printStackTrace()
             }
         }
     }
@@ -261,7 +261,7 @@ class ChatDetailViewModel(
         val uid = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             blockUserUseCase(uid, otherUserId)
-            _isBlocked.value = true
+            _isBlocked.value  = true
             _actionDone.value = "user_blocked"
             onDone()
         }

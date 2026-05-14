@@ -9,11 +9,13 @@ import com.example.roommatch_pmdm.data.repositories.InterestRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.Interest
 import com.example.roommatch_pmdm.domain.model.RoomPost
+import com.example.roommatch_pmdm.notifications.FcmNotificationSender
 import com.example.roommatch_pmdm.notifications.NotificationHelper
 
 class ToggleInterestUseCase(
     private val interestRepository: InterestRepository,
     private val userRepository: UserRepository,
+    private val fcmNotificationSender: FcmNotificationSender,
     private val context: Context
 ) {
     suspend operator fun invoke(
@@ -33,13 +35,18 @@ class ToggleInterestUseCase(
                 createdAt          = System.currentTimeMillis()
             )
             interestRepository.addInterest(interest).map {
-                notifyIfAllowed(username, post.title)
+                notifyLocalIfAllowed(username, post.title)
+                fcmNotificationSender.sendToUser(
+                    targetUserId = post.ownerId,
+                    title        = "Nuevo interesado en tu anuncio",
+                    body         = "$username está interesado en \"${post.title}\""
+                )
                 true
             }
         }
     }
 
-    private fun notifyIfAllowed(username: String, postTitle: String) {
+    private fun notifyLocalIfAllowed(username: String, postTitle: String) {
         val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 context, Manifest.permission.POST_NOTIFICATIONS

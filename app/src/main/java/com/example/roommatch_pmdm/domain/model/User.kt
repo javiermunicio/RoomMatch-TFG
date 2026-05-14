@@ -14,7 +14,8 @@ data class User(
     val preferences: List<String> = emptyList(),
     val budget: Int = 0,
     val createdAt: Long = 0,
-    val updatedAt: Long = 0
+    val updatedAt: Long = 0,
+    val fcmToken: String = ""
 )
 
 data class UserProfile(

@@ -6,23 +6,33 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.example.roommatch_pmdm.data.repositories.MatchRepository
+import com.example.roommatch_pmdm.notifications.FcmNotificationSender
 import com.example.roommatch_pmdm.notifications.NotificationHelper
 
 class SaveLikeAndCheckMatchUseCase(
     private val matchRepository: MatchRepository,
+    private val fcmNotificationSender: FcmNotificationSender,
     private val context: Context
 ) {
     suspend operator fun invoke(
         currentUserId: String,
+        currentUsername: String,
         targetUserId: String,
         targetUsername: String
     ): Boolean {
         val isMatch = matchRepository.saveLikeAndCheckMatch(currentUserId, targetUserId)
-        if (isMatch) notifyIfAllowed(targetUsername)
+        if (isMatch) {
+            notifyLocalIfAllowed(targetUsername)
+            fcmNotificationSender.sendToUser(
+                targetUserId = targetUserId,
+                title        = "¡Nuevo Match! 🎉",
+                body         = "¡Has hecho match con $currentUsername!"
+            )
+        }
         return isMatch
     }
 
-    private fun notifyIfAllowed(matchedUsername: String) {
+    private fun notifyLocalIfAllowed(matchedUsername: String) {
         val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 context, Manifest.permission.POST_NOTIFICATIONS
