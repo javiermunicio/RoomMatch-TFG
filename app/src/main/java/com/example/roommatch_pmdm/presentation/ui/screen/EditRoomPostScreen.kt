@@ -3,6 +3,9 @@ package com.example.roommatch_pmdm.presentation.ui.screen
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,24 +16,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.roommatch_pmdm.presentation.viewmodel.EditRoomPostViewModel
 import org.koin.androidx.compose.koinViewModel
-
-private val RoomBlue = Color(0xFF4A90D9)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
+import com.example.roommatch_pmdm.ui.theme.RoomBlueSoft
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,15 +68,17 @@ fun EditRoomPostScreen(
         }
     }
 
+    // ── Diálogo de confirmación ────────────────────────────────────────────
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Guardar cambios") },
-            text  = { Text("¿Guardar los cambios en '${roomPost.title}'?") },
+            title = { Text("¿Guardar cambios?") },
+            text  = { Text("Se actualizará el anuncio '${roomPost.title}'.") },
             confirmButton = {
-                TextButton(onClick = { showConfirmDialog = false; viewModel.save() }) {
-                    Text("Guardar")
-                }
+                Button(
+                    onClick = { showConfirmDialog = false; viewModel.save() },
+                    colors  = ButtonDefaults.buttonColors(containerColor = RoomBlue)
+                ) { Text("Guardar") }
             },
             dismissButton = {
                 TextButton(onClick = { showConfirmDialog = false }) { Text("Cancelar") }
@@ -81,144 +88,323 @@ fun EditRoomPostScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Editar anuncio", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
+            Surface(
+                modifier        = Modifier.fillMaxWidth(),
+                shadowElevation = 4.dp,
+                color           = MaterialTheme.colorScheme.surface
+            ) {
+                Row(
+                    modifier          = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor    = Color.White,
-                    titleContentColor = RoomBlue
-                )
-            )
+                    Text(
+                        "Editar anuncio",
+                        style      = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color      = MaterialTheme.colorScheme.primary,
+                        modifier   = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
         }
     ) { innerPadding ->
 
+        // ── Estado de carga inicial ────────────────────────────────────────
         if (isLoading && roomPost.id.isEmpty()) {
             Box(
                 modifier         = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator(color = RoomBlue) }
+            ) {
+                CircularProgressIndicator(color = RoomBlue)
+            }
         } else {
             Column(
                 modifier = Modifier
                     .padding(innerPadding)
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
 
-                // ── Gestión de imágenes ──────────────────────────────────────
-                EditImageSection(
-                    existingUrls  = roomPost.images,
-                    newUris       = newImageUris,
-                    onAddImages   = { imagePickerLauncher.launch("image/*") },
-                    onRemoveExisting = { viewModel.removeExistingImage(it) },
-                    onRemoveNew      = { viewModel.removeNewImage(it) }
-                )
+                // ── Sección fotos ──────────────────────────────────────────
+                EditFormSection(title = "Fotos del piso") {
+                    EditImagePickerSection(
+                        existingUrls     = roomPost.images,
+                        newUris          = newImageUris,
+                        onAddImages      = { imagePickerLauncher.launch("image/*") },
+                        onRemoveExisting = { viewModel.removeExistingImage(it) },
+                        onRemoveNew      = { viewModel.removeNewImage(it) }
+                    )
+                }
 
-                HorizontalDivider()
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // ── Campos ───────────────────────────────────────────────────
-                OutlinedTextField(
-                    modifier      = Modifier.fillMaxWidth(),
-                    value         = roomPost.title,
-                    onValueChange = { viewModel.setTitle(it) },
-                    label         = { Text("Título del anuncio") },
-                    placeholder   = { Text("Ej: Habitación en Malasaña") }
-                )
-                OutlinedTextField(
-                    modifier      = Modifier.fillMaxWidth(),
-                    value         = roomPost.description,
-                    onValueChange = { viewModel.setDescription(it) },
-                    label         = { Text("Descripción") },
-                    minLines      = 3
-                )
-                OutlinedTextField(
-                    modifier      = Modifier.fillMaxWidth(),
-                    value         = roomPost.address,
-                    onValueChange = { viewModel.setAddress(it) },
-                    label         = { Text("Dirección") }
-                )
-                OutlinedTextField(
-                    modifier      = Modifier.fillMaxWidth(),
-                    value         = roomPost.city,
-                    onValueChange = { viewModel.setCity(it) },
-                    label         = { Text("Ciudad") }
-                )
-                OutlinedTextField(
-                    modifier      = Modifier.fillMaxWidth(),
-                    value         = if (roomPost.price == 0L) "" else roomPost.price.toString(),
-                    onValueChange = { viewModel.setPrice(it.toLongOrNull() ?: 0L) },
-                    label         = { Text("Precio mensual (€)") }
-                )
-                OutlinedTextField(
-                    modifier      = Modifier.fillMaxWidth(),
-                    value         = if (roomPost.roommates == 0) "" else roomPost.roommates.toString(),
-                    onValueChange = { viewModel.setRoommates(it.toIntOrNull() ?: 0) },
-                    label         = { Text("Número de compañeros actuales") }
-                )
-                OutlinedTextField(
-                    modifier      = Modifier.fillMaxWidth(),
-                    value         = roomPost.availableFrom,
-                    onValueChange = { viewModel.setAvailableFrom(it) },
-                    label         = { Text("Disponible desde") },
-                    placeholder   = { Text("Ej: 01/06/2025") }
-                )
+                // ── Sección información básica ─────────────────────────────
+                EditFormSection(title = "Información básica") {
+                    EditFormField(
+                        value         = roomPost.title,
+                        onValueChange = { viewModel.setTitle(it) },
+                        label         = "Título del anuncio",
+                        placeholder   = "Ej: Habitación luminosa en Malasaña",
+                        icon          = Icons.Filled.Home
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    EditFormField(
+                        value         = roomPost.description,
+                        onValueChange = { viewModel.setDescription(it) },
+                        label         = "Descripción",
+                        placeholder   = "Describe el piso, normas, ambiente...",
+                        icon          = Icons.Filled.Notes,
+                        minLines      = 3
+                    )
+                }
 
-                // ── Progreso de subida ───────────────────────────────────────
-                uploadProgress?.let {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ── Sección ubicación ──────────────────────────────────────
+                EditFormSection(title = "Ubicación") {
+                    EditFormField(
+                        value         = roomPost.address,
+                        onValueChange = { viewModel.setAddress(it) },
+                        label         = "Dirección",
+                        placeholder   = "Calle y número",
+                        icon          = Icons.Filled.LocationOn
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    EditFormField(
+                        value         = roomPost.city,
+                        onValueChange = { viewModel.setCity(it) },
+                        label         = "Ciudad",
+                        placeholder   = "Ej: Madrid",
+                        icon          = Icons.Filled.LocationCity
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ── Sección detalles ───────────────────────────────────────
+                EditFormSection(title = "Detalles") {
                     Row(
-                        verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier              = Modifier.fillMaxWidth()
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        CircularProgressIndicator(
-                            modifier    = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color       = RoomBlue
+                        EditFormField(
+                            value         = if (roomPost.price == 0L) "" else roomPost.price.toString(),
+                            onValueChange = { viewModel.setPrice(it.toLongOrNull() ?: 0L) },
+                            label         = "Precio (€/mes)",
+                            placeholder   = "600",
+                            icon          = Icons.Filled.EuroSymbol,
+                            keyboardType  = KeyboardType.Number,
+                            modifier      = Modifier.weight(1f)
                         )
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = RoomBlue)
+                        EditFormField(
+                            value         = if (roomPost.roommates == 0) "" else roomPost.roommates.toString(),
+                            onValueChange = { viewModel.setRoommates(it.toIntOrNull() ?: 0) },
+                            label         = "Compañeros",
+                            placeholder   = "2",
+                            icon          = Icons.Filled.Group,
+                            keyboardType  = KeyboardType.Number,
+                            modifier      = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    EditFormField(
+                        value         = roomPost.availableFrom,
+                        onValueChange = { viewModel.setAvailableFrom(it) },
+                        label         = "Disponible desde",
+                        placeholder   = "DD/MM/AAAA",
+                        icon          = Icons.Filled.CalendarToday
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ── Progreso de subida ─────────────────────────────────────
+                AnimatedVisibility(
+                    visible = uploadProgress != null,
+                    enter   = fadeIn(),
+                    exit    = fadeOut()
+                ) {
+                    uploadProgress?.let {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color    = RoomBlueSoft,
+                            shape    = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                modifier              = Modifier.padding(12.dp),
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier    = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color       = RoomBlue
+                                )
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = RoomBlue)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
-                // ── Error ────────────────────────────────────────────────────
-                validationError?.let {
-                    Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                // ── Error de validación ────────────────────────────────────
+                AnimatedVisibility(
+                    visible = validationError != null,
+                    enter   = fadeIn(),
+                    exit    = fadeOut()
+                ) {
+                    validationError?.let {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color    = MaterialTheme.colorScheme.errorContainer,
+                            shape    = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                modifier              = Modifier.padding(12.dp),
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Warning,
+                                    contentDescription = null,
+                                    tint     = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    it,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // ── Botón guardar ────────────────────────────────────────────
+                // ── Botón guardar ──────────────────────────────────────────
                 Button(
                     onClick  = { showConfirmDialog = true },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape    = MaterialTheme.shapes.extraLarge,
                     colors   = ButtonDefaults.buttonColors(containerColor = RoomBlue),
-                    enabled  = !isLoading && roomPost.title.isNotEmpty() && roomPost.city.isNotEmpty()
+                    enabled  = !isLoading &&
+                            roomPost.title.isNotEmpty() &&
+                            roomPost.city.isNotEmpty()
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(
-                            modifier    = Modifier.size(22.dp),
-                            color       = Color.White,
-                            strokeWidth = 2.dp
+                            modifier    = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color       = Color.White
                         )
                     } else {
+                        Icon(
+                            Icons.Filled.Save,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text("Guardar cambios", fontWeight = FontWeight.SemiBold)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
 }
 
-// ── Sección de imágenes ───────────────────────────────────────────────────────
+// ── Contenedor de sección con título ─────────────────────────────────────────
 
 @Composable
-private fun EditImageSection(
+private fun EditFormSection(
+    title:   String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column {
+        Text(
+            text       = title,
+            style      = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color      = RoomBlue,
+            modifier   = Modifier.padding(bottom = 8.dp, start = 2.dp)
+        )
+        Surface(
+            modifier        = Modifier.fillMaxWidth(),
+            color           = MaterialTheme.colorScheme.surface,
+            shape           = MaterialTheme.shapes.medium,
+            shadowElevation = 1.dp
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                content()
+            }
+        }
+    }
+}
+
+// ── Campo de formulario ───────────────────────────────────────────────────────
+
+@Composable
+private fun EditFormField(
+    value:         String,
+    onValueChange: (String) -> Unit,
+    label:         String,
+    placeholder:   String,
+    icon:          ImageVector,
+    modifier:      Modifier     = Modifier.fillMaxWidth(),
+    keyboardType:  KeyboardType = KeyboardType.Text,
+    minLines:      Int          = 1
+) {
+    OutlinedTextField(
+        value         = value,
+        onValueChange = onValueChange,
+        modifier      = modifier,
+        label         = { Text(label, fontSize = 12.sp) },
+        placeholder   = {
+            Text(
+                placeholder,
+                fontSize = 13.sp,
+                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+            )
+        },
+        leadingIcon   = {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint     = if (value.isNotBlank()) RoomBlue
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier.size(18.dp)
+            )
+        },
+        minLines        = minLines,
+        singleLine      = minLines == 1,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        shape           = MaterialTheme.shapes.medium,
+        colors          = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor      = RoomBlue,
+            unfocusedBorderColor    = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+            focusedLabelColor       = RoomBlue,
+            focusedContainerColor   = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+        )
+    )
+}
+
+// ── Selector de imágenes (existentes + nuevas) ────────────────────────────────
+
+@Composable
+private fun EditImagePickerSection(
     existingUrls:     List<String>,
     newUris:          List<Uri>,
     onAddImages:      () -> Unit,
@@ -229,17 +415,25 @@ private fun EditImageSection(
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
-            verticalAlignment     = Alignment.CenterVertically,
+            modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            modifier              = Modifier.fillMaxWidth()
+            verticalAlignment     = Alignment.CenterVertically
         ) {
             Text(
-                "Fotos del piso",
-                style      = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color      = RoomBlue
+                "$total/5 fotos",
+                style      = MaterialTheme.typography.bodySmall,
+                color      = if (total > 0) RoomBlue
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                fontWeight = FontWeight.Medium
             )
-            Text("$total/5", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            if (total > 0) {
+                LinearProgressIndicator(
+                    progress      = { total / 5f },
+                    modifier      = Modifier.width(80.dp).height(4.dp).clip(CircleShape),
+                    color         = RoomBlue,
+                    trackColor    = RoomBlueSoft
+                )
+            }
         }
 
         FlowRow(
@@ -249,38 +443,39 @@ private fun EditImageSection(
         ) {
             // Imágenes ya subidas (URLs remotas)
             existingUrls.forEach { url ->
-                EditImageThumbnail(
+                EditThumbnail(
                     model    = url,
                     onRemove = { onRemoveExisting(url) }
                 )
             }
-
             // Imágenes nuevas seleccionadas localmente
             newUris.forEach { uri ->
-                EditImageThumbnail(
+                EditThumbnail(
                     model    = uri,
                     onRemove = { onRemoveNew(uri) }
                 )
             }
-
-            // Botón "+" si hay hueco
+            // Botón añadir si hay hueco
             if (total < 5) {
-                AddImageButton(onClick = onAddImages)
+                EditAddImageButton(
+                    onClick  = onAddImages,
+                    isEmpty  = total == 0
+                )
             }
         }
 
         if (total == 0) {
             Text(
-                "Añade hasta 5 fotos para que los interesados puedan ver el piso",
-                style    = MaterialTheme.typography.bodySmall,
-                color    = Color.Gray
+                "Añade hasta 5 fotos para mostrar el piso",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
         }
     }
 }
 
 @Composable
-private fun EditImageThumbnail(model: Any, onRemove: () -> Unit) {
+private fun EditThumbnail(model: Any, onRemove: () -> Unit) {
     Box(modifier = Modifier.size(90.dp)) {
         AsyncImage(
             model              = model,
@@ -303,7 +498,7 @@ private fun EditImageThumbnail(model: Any, onRemove: () -> Unit) {
             Icon(
                 Icons.Filled.Close,
                 contentDescription = "Eliminar imagen",
-                tint     = Color.Red,
+                tint     = Color(0xFFE24B4A),
                 modifier = Modifier.size(14.dp)
             )
         }
@@ -311,26 +506,33 @@ private fun EditImageThumbnail(model: Any, onRemove: () -> Unit) {
 }
 
 @Composable
-private fun AddImageButton(onClick: () -> Unit) {
+private fun EditAddImageButton(onClick: () -> Unit, isEmpty: Boolean) {
     Box(
-        modifier         = Modifier
-            .size(90.dp)
+        modifier = Modifier
+            .size(if (isEmpty) 120.dp else 90.dp)
             .clip(RoundedCornerShape(10.dp))
-            .border(1.5.dp, RoomBlue, RoundedCornerShape(10.dp))
-            .background(RoomBlue.copy(alpha = 0.05f))
+            .border(
+                width = 1.5.dp,
+                color = RoomBlue.copy(alpha = if (isEmpty) 0.6f else 1f),
+                shape = RoundedCornerShape(10.dp)
+            )
+            .background(RoomBlueSoft)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Icon(
-                Icons.Filled.Add,
-                contentDescription = "Añadir imagen",
+                Icons.Filled.AddPhotoAlternate,
+                contentDescription = "Añadir foto",
                 tint     = RoomBlue,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(if (isEmpty) 32.dp else 24.dp)
             )
             Text(
-                "Añadir",
-                fontSize   = 11.sp,
+                if (isEmpty) "Añadir fotos" else "Añadir",
+                fontSize   = if (isEmpty) 12.sp else 11.sp,
                 color      = RoomBlue,
                 fontWeight = FontWeight.Medium
             )

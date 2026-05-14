@@ -37,9 +37,30 @@ class RoomPostRepository(private val firestore: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
+    suspend fun getById(id: String): Result<RoomPost> {
+        return try {
+            val doc = collection.document(id).get().await()
+            val post = doc.toObject(RoomPost::class.java)?.copy(id = doc.id)
+                ?: return Result.failure(Exception("Anuncio no encontrado"))
+            Result.success(post)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun save(roomPost: RoomPost): Boolean {
         return try {
             collection.add(roomPost).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun update(roomPost: RoomPost): Boolean {
+        return try {
+            collection.document(roomPost.id).set(roomPost).await()
             true
         } catch (e: Exception) {
             e.printStackTrace()

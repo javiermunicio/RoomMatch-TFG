@@ -48,4 +48,13 @@ class UserRepository(private val firestore: FirebaseFirestore) {
             Result.failure(e)
         }
     }
+
+    suspend fun updateFcmToken(userId: String, token: String): Result<Unit> {
+        return try {
+            usersCollection.document(userId).update("fcmToken", token).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

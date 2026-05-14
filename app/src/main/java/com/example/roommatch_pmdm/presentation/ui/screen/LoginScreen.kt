@@ -32,11 +32,9 @@ import com.example.roommatch_pmdm.R
 import com.example.roommatch_pmdm.presentation.navigation.Screen
 import com.example.roommatch_pmdm.presentation.viewmodel.LoginViewModel
 import org.koin.androidx.compose.koinViewModel
-
-// ── Paleta fija de marca (igual en claro y oscuro) ────────────────────────────
-private val FigmaBlue       = Color(0xFF4A90D9)
-private val FigmaRed        = Color(0xFFE05A5A)
-private val FigmaButtonBlue = Color(0xFF4A9FD9)
+import com.example.roommatch_pmdm.ui.theme.FigmaBlue
+import com.example.roommatch_pmdm.ui.theme.FigmaRed
+import com.example.roommatch_pmdm.ui.theme.FigmaButtonBlue
 
 @Composable
 fun LoginScreen(

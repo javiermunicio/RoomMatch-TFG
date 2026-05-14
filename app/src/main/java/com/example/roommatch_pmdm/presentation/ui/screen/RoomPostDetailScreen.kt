@@ -32,11 +32,8 @@ import com.example.roommatch_pmdm.presentation.viewmodel.RoomPostDetailViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-
-private val RoomBlue  = Color(0xFF4A90D9)
-private val RoomGreen = Color(0xFF2ECC71)
-// MaterialTheme.colorScheme.surfaceVariant replaced by MaterialTheme.colorScheme.surfaceVariant
-// MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) replaced by MaterialTheme.colorScheme.onSurface.copy(alpha=0.6f)
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
+import com.example.roommatch_pmdm.ui.theme.RoomGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
