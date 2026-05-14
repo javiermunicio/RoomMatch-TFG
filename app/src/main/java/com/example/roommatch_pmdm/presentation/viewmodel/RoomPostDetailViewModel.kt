@@ -9,21 +9,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.repositories.InterestRepository
+import com.example.roommatch_pmdm.data.repositories.RoomPostRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.Interest
 import com.example.roommatch_pmdm.domain.model.RoomPost
 import com.example.roommatch_pmdm.notifications.NotificationHelper
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class RoomPostDetailViewModel(
     private val interestRepository: InterestRepository,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val firestore: FirebaseFirestore,
+    private val roomPostRepository: RoomPostRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -52,12 +51,9 @@ class RoomPostDetailViewModel(
         val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val doc = firestore.collection("roomPosts").document(postId).get().await()
-                val roomPost = doc.toObject(RoomPost::class.java)?.copy(id = doc.id)
-                _post.value = roomPost
-
-                if (roomPost != null) {
+            roomPostRepository.getById(postId).fold(
+                onSuccess = { roomPost ->
+                    _post.value = roomPost
                     _isOwner.value = roomPost.ownerId == currentUserId
                     _isInterested.value = interestRepository.hasInterest(currentUserId, postId)
                     launch {
@@ -65,12 +61,10 @@ class RoomPostDetailViewModel(
                             _interestCount.value = count
                         }
                     }
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = "No se pudo cargar el anuncio"
-            } finally {
-                _isLoading.value = false
-            }
+                },
+                onFailure = { _errorMessage.value = "No se pudo cargar el anuncio" }
+            )
+            _isLoading.value = false
         }
     }
 
@@ -85,15 +79,13 @@ class RoomPostDetailViewModel(
             if (_isInterested.value) {
                 interestRepository.removeInterest(currentUserId, postId).fold(
                     onSuccess = {
-                        _isInterested.value  = false
+                        _isInterested.value   = false
                         _successMessage.value = "Has retirado tu interés"
                     },
                     onFailure = { _errorMessage.value = "Error al retirar el interés" }
                 )
             } else {
-                val userResult = userRepository.getUser(currentUserId)
-                val username   = userResult.getOrNull()?.username ?: "Usuario"
-
+                val username = userRepository.getUser(currentUserId).getOrNull()?.username ?: "Usuario"
                 val interest = Interest(
                     postId             = postId,
                     postOwnerId        = postOwnerId,
