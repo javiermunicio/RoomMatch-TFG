@@ -24,9 +24,11 @@ import kotlin.math.abs
 class MatchingViewModel(
     private val authRepository: AuthRepository,
     private val getUsersToSwipeUseCase: GetUsersToSwipeUseCase,
-    private val saveLikeAndCheckMatchUseCase: SaveLikeAndCheckMatchUseCase
+    private val saveLikeAndCheckMatchUseCase: SaveLikeAndCheckMatchUseCase,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
+    private var currentUsername = ""
     private val _userCards = MutableStateFlow<List<UserCard>>(emptyList())
     val userCards: StateFlow<List<UserCard>> = _userCards
 
@@ -42,8 +44,16 @@ class MatchingViewModel(
     private val _matchedUser = MutableStateFlow<UserCard?>(null)
     val matchedUser: StateFlow<UserCard?> = _matchedUser
 
-    init { loadUserCards() }
-
+    init {
+        loadUserCards()
+        loadCurrentUsername()
+    }
+    private fun loadCurrentUsername() {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            currentUsername = userRepository.getUser(uid).getOrNull()?.username ?: ""
+        }
+    }
     private fun loadUserCards() {
         val currentUserId = authRepository.currentUser?.uid ?: return
         viewModelScope.launch {
@@ -115,7 +125,12 @@ class MatchingViewModel(
         val currentCard   = _userCards.value.getOrNull(_currentIndex.value) ?: return
 
         viewModelScope.launch {
-            val isMatch = saveLikeAndCheckMatchUseCase(currentUserId, currentCard.id, currentCard.username)
+            val isMatch = saveLikeAndCheckMatchUseCase(
+                currentUserId    = currentUserId,
+                currentUsername  = currentUsername,
+                targetUserId     = currentCard.id,
+                targetUsername   = currentCard.username
+            )
             if (isMatch) {
                 _matchedUser.value    = currentCard
                 _showMatchPopup.value = true
