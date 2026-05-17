@@ -18,12 +18,9 @@
         android:theme="@style/Theme.RoomMatchPMDM"
         >
         <service
-            android:name=".notifications.RoomMatchFirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+            android:name=".notifications.NotificationListenerService"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

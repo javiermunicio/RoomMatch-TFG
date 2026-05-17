@@ -51,12 +51,12 @@ val appModule = module {
 
     // ViewModels
     viewModel { ThemeViewModel(androidContext()) }
-    viewModel { LoginViewModel(get(), get()) }
+    viewModel { LoginViewModel(get(), get(),androidContext()) }
     viewModel { RegisterViewModel(get(), get(), get()) }
     viewModel { MatchingViewModel(get(), get(), get(),get()) }
     viewModel { ChatListViewModel(get(), get(), get(), get()) }
     viewModel { ChatDetailViewModel(get(), get(), get(),get(), get(), get(), androidContext()) }
-    viewModel { ProfileViewModel(get(), get(), get(), get()) }
+    viewModel { ProfileViewModel(get(), get(), get(), get(), androidContext()) }
     viewModel { AddRoomPostViewModel(get(), get(), get()) }
     viewModel { RoomPostListViewModel(get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(get(), get(), get()) }

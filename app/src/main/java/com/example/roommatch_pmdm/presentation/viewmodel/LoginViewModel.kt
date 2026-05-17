@@ -1,16 +1,22 @@
+// En LoginViewModel.kt — añadir el Context al constructor y arrancar el servicio
+
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.notifications.FcmTokenManager
+import com.example.roommatch_pmdm.notifications.NotificationListenerService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
-    private val fcmTokenManager: FcmTokenManager
+    private val fcmTokenManager: FcmTokenManager,
+    private val context: Context
 ) : ViewModel() {
 
     private val _username = MutableStateFlow("")
@@ -42,6 +48,12 @@ class LoginViewModel(
             result.fold(
                 onSuccess = { user ->
                     fcmTokenManager.refreshAndSaveToken(user.uid)
+
+                    // Arrancar el listener de notificaciones Firestore
+                    context.startService(
+                        Intent(context, NotificationListenerService::class.java)
+                    )
+
                     _loginSuccess.value = true
                     _errorMessage.value = null
                 },
