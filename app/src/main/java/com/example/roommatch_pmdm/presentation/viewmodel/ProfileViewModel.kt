@@ -1,5 +1,7 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +11,7 @@ import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.domain.model.User
 import com.example.roommatch_pmdm.domain.usecase.SaveProfileUseCase
 import com.example.roommatch_pmdm.domain.usecase.UploadProfileImageUseCase
+import com.example.roommatch_pmdm.notifications.NotificationListenerService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -17,7 +20,9 @@ class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val saveProfileUseCase: SaveProfileUseCase,
-    private val uploadProfileImageUseCase: UploadProfileImageUseCase
+    private val uploadProfileImageUseCase: UploadProfileImageUseCase,
+    private val context: Context
+
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
@@ -158,6 +163,8 @@ class ProfileViewModel(
 
     fun logout() {
         authRepository.logout()
+        context.stopService(Intent(context, NotificationListenerService::class.java))
+
     }
 
     fun clearError() { _errorMessage.value = null }
