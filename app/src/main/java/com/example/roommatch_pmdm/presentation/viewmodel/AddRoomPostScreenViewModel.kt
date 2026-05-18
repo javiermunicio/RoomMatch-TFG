@@ -30,11 +30,9 @@ class AddRoomPostViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // URIs locales seleccionadas (para preview antes de subir)
     private val _selectedImageUris = MutableStateFlow<List<Uri>>(emptyList())
     val selectedImageUris: StateFlow<List<Uri>> = _selectedImageUris.asStateFlow()
 
-    // Progreso de subida: "2/3 imágenes subidas"
     private val _uploadProgress = MutableStateFlow<String?>(null)
     val uploadProgress: StateFlow<String?> = _uploadProgress.asStateFlow()
 
@@ -48,7 +46,6 @@ class AddRoomPostViewModel(
 
     fun addImages(uris: List<Uri>) {
         val current = _selectedImageUris.value.toMutableList()
-        // Máximo 5 imágenes en total
         val remaining = 5 - current.size
         current.addAll(uris.take(remaining))
         _selectedImageUris.value = current
@@ -68,7 +65,6 @@ class AddRoomPostViewModel(
     fun save() {
         val post = _roomPost.value
 
-        // Validaciones
         if (post.title.isBlank()) {
             _validationError.value = "El título es obligatorio"; return
         }
@@ -95,7 +91,6 @@ class AddRoomPostViewModel(
         viewModelScope.launch {
             _isLoading.value = true
 
-            // 1. Subir imágenes a Cloudinary
             val uploadedUrls = mutableListOf<String>()
             val uris = _selectedImageUris.value
             uris.forEachIndexed { index, uri ->
@@ -107,7 +102,6 @@ class AddRoomPostViewModel(
             }
             _uploadProgress.value = null
 
-            // 2. Guardar el post con las URLs
             val fullPost = post.copy(
                 ownerId   = currentUser.uid,
                 ownerName = currentUser.email ?: "",

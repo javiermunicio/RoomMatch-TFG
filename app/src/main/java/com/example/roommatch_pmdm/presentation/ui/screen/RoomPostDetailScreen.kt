@@ -77,7 +77,6 @@ fun RoomPostDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
-                // Botón editar en la barra superior (solo para el dueño)
                 actions = {
                     if (isOwner && post != null) {
                         IconButton(onClick = {
@@ -105,7 +104,6 @@ fun RoomPostDetailScreen(
                     color = MaterialTheme.colorScheme.surface
                 ) {
                     if (isOwner) {
-                        // ── Botón "Ver interesados" para el dueño ─────────────
                         Button(
                             onClick = {
                                 navController.navigate(
@@ -137,7 +135,6 @@ fun RoomPostDetailScreen(
                             )
                         }
                     } else {
-                        // ── Botón "Me interesa" para usuarios no dueños ───────
                         Button(
                             onClick  = { viewModel.toggleInterest() },
                             modifier = Modifier
@@ -198,8 +195,6 @@ fun RoomPostDetailScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun PostDetailContent(
     post: RoomPost,
@@ -216,7 +211,6 @@ private fun PostDetailContent(
             .verticalScroll(rememberScrollState())
     ) {
 
-        // ── Galería de imágenes ──────────────────────────────────────────────
         if (post.images.isNotEmpty()) {
             LazyRow(
                 modifier               = Modifier.fillMaxWidth().height(240.dp),
@@ -243,7 +237,6 @@ private fun PostDetailContent(
             }
         }
 
-        // ── Título + precio ──────────────────────────────────────────────────
         Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp) {
             Row(
                 modifier              = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
@@ -273,7 +266,6 @@ private fun PostDetailContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Chips de info rápida ─────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -297,7 +289,6 @@ private fun PostDetailContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Descripción ──────────────────────────────────────────────────────
         if (post.description.isNotEmpty()) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -319,7 +310,6 @@ private fun PostDetailContent(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // ── Publicado por ────────────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -353,7 +343,6 @@ private fun PostDetailContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Ubicación → abre Google Maps ─────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -403,8 +392,6 @@ private fun PostDetailContent(
         Spacer(modifier = Modifier.height(88.dp))
     }
 }
-
-// ── Componentes auxiliares ────────────────────────────────────────────────────
 
 @Composable
 private fun InfoChip(

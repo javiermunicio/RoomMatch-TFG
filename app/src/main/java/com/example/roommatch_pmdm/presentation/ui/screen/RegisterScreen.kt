@@ -45,8 +45,6 @@ fun RegisterScreen(
     val isLoading       by viewModel.isLoading.collectAsState()
     val registerSuccess by viewModel.registerSuccess.collectAsState()
     val errorMessage    by viewModel.errorMessage.collectAsState()
-
-    // Colores que se adaptan al tema
     val topBgColor  = MaterialTheme.colorScheme.primaryContainer
     val cardBgColor = MaterialTheme.colorScheme.surface
     val fieldBorder = MaterialTheme.colorScheme.primary
@@ -64,8 +62,6 @@ fun RegisterScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
-        // ── Fondo superior adaptativo ─────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,7 +69,6 @@ fun RegisterScreen(
                 .background(topBgColor)
         )
 
-        // ── Fondo inferior adaptativo ─────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -91,7 +86,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // ── Logo ──────────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(100.dp)
@@ -108,7 +102,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // ── "RoomMatch" bicolor ───────────────────────────────────────
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(color = FigmaBlue)) { append("Room") }
@@ -120,7 +113,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Card blanca/oscura con formulario ─────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -130,7 +122,6 @@ fun RegisterScreen(
             ) {
                 Column {
 
-                    // Usuario
                     AdaptiveField(
                         value         = username,
                         onValueChange = { viewModel.onUsernameChanged(it) },
@@ -143,7 +134,6 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Correo
                     AdaptiveField(
                         value         = email,
                         onValueChange = { viewModel.onEmailChanged(it) },
@@ -157,7 +147,6 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Contraseña
                     AdaptiveField(
                         value            = password,
                         onValueChange    = { viewModel.onPasswordChanged(it) },
@@ -173,7 +162,6 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Confirmar contraseña
                     AdaptiveField(
                         value            = confirmPassword,
                         onValueChange    = { viewModel.onConfirmPasswordChanged(it) },
@@ -189,7 +177,6 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Error
                     AnimatedVisibility(
                         visible = errorMessage != null,
                         enter   = fadeIn() + expandVertically(),
@@ -205,7 +192,6 @@ fun RegisterScreen(
                         }
                     }
 
-                    // ¿Ya tienes cuenta?
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
@@ -233,7 +219,6 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Botón Crear Cuenta
                     Button(
                         onClick  = { viewModel.register() },
                         modifier = Modifier

@@ -15,20 +15,15 @@ class MatchRepository(private val firestore: FirebaseFirestore) {
     private val matchesCollection = firestore.collection("matches")
     private val usersCollection  = firestore.collection("users")
 
-    // Guarda el like y devuelve true si hay match mutuo
     suspend fun saveLikeAndCheckMatch(fromUserId: String, toUserId: String): Boolean {
-        // 1. Guardar el like
         val likeId = "${fromUserId}_${toUserId}"
         likesCollection.document(likeId).set(
             Like(fromUserId = fromUserId, toUserId = toUserId, createdAt = System.currentTimeMillis())
         ).await()
 
-        // 2. Comprobar si el otro ya dio like
         val reverseId = "${toUserId}_${fromUserId}"
         val reverseDoc = likesCollection.document(reverseId).get().await()
-
         return if (reverseDoc.exists()) {
-            // 3. Crear match
             val matchId = if (fromUserId < toUserId) "${fromUserId}_${toUserId}"
             else "${toUserId}_${fromUserId}"
             matchesCollection.document(matchId).set(
@@ -44,8 +39,6 @@ class MatchRepository(private val firestore: FirebaseFirestore) {
             false
         }
     }
-
-    // Devuelve los IDs de usuarios con los que hay match
     fun getMatches(currentUserId: String): Flow<List<String>> = callbackFlow {
         val fromUser1 = mutableSetOf<String>()
         val fromUser2 = mutableSetOf<String>()
@@ -77,8 +70,6 @@ class MatchRepository(private val firestore: FirebaseFirestore) {
             listener2.remove()
         }
     }
-
-    // Versión sin Flow para usarla puntualmente
     suspend fun getMatchedUserIds(currentUserId: String): List<String> {
         val result = mutableListOf<String>()
 
@@ -94,15 +85,10 @@ class MatchRepository(private val firestore: FirebaseFirestore) {
 
         return result
     }
-
-    // Obtiene usuarios que aún no han sido valorados por currentUserId
     suspend fun getUsersToSwipe(currentUserId: String): List<User> {
-        // IDs a los que ya dio like
         val likedSnap = likesCollection
             .whereEqualTo("fromUserId", currentUserId).get().await()
         val alreadyLiked = likedSnap.documents.map { it.toObject(Like::class.java)!!.toUserId }.toSet()
-
-        // Todos los usuarios excepto él mismo y los ya valorados
         val usersSnap = usersCollection.get().await()
         return usersSnap.documents.mapNotNull { doc ->
             val user = doc.toObject(User::class.java) ?: return@mapNotNull null

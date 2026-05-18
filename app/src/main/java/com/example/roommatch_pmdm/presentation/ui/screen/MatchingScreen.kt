@@ -152,13 +152,11 @@ fun UserCardDisplay(
     ) {
         Column {
 
-            // ── Foto + nombre/ubicación superpuestos ──────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(260.dp)
             ) {
-                // Foto de fondo
                 AsyncImage(
                     model              = userCard.profileImage.ifEmpty { "https://via.placeholder.com/400x260" },
                     contentDescription = "${userCard.username}, ${userCard.age}",
@@ -166,7 +164,6 @@ fun UserCardDisplay(
                     contentScale       = ContentScale.Crop
                 )
 
-                // Gradiente oscuro en la parte inferior para que el texto sea legible
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -179,7 +176,6 @@ fun UserCardDisplay(
                         )
                 )
 
-                // Nombre + ubicación encima del gradiente — ÚNICO Text de localización
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -213,7 +209,6 @@ fun UserCardDisplay(
                 }
             }
 
-            // ── Cuerpo de la tarjeta ──────────────────────────────────────────
             Column(
                 modifier            = Modifier
                     .fillMaxWidth()
@@ -221,7 +216,6 @@ fun UserCardDisplay(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                // Bio
                 if (userCard.bio.isNotEmpty()) {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(
@@ -243,7 +237,6 @@ fun UserCardDisplay(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 }
 
-                // Hábitos / Personalidad
                 if (userCard.habits.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
@@ -276,7 +269,6 @@ fun UserCardDisplay(
                     }
                 }
 
-                // Preferencias
                 if (userCard.preferences.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
@@ -352,10 +344,8 @@ fun MatchPopup(
                     .padding(horizontal = 24.dp)
                     .fillMaxWidth()
             ) {
-                // Tejado
                 HousRoofShape(roofBrown, accentGold)
 
-                // Cuerpo de la tarjeta
                 Column(
                     modifier = Modifier
                         .padding(top = 48.dp)
@@ -466,7 +456,6 @@ fun MatchPopup(
                     }
                 }
 
-                // Avatar flotante
                 Surface(
                     modifier = Modifier
                         .size(90.dp)
@@ -484,7 +473,6 @@ fun MatchPopup(
                     )
                 }
 
-                // Estrella decorativa
                 Surface(
                     modifier = Modifier
                         .size(28.dp)

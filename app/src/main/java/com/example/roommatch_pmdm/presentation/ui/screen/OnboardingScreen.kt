@@ -39,10 +39,6 @@ import com.example.roommatch_pmdm.ui.theme.RoomBlue
 import com.example.roommatch_pmdm.ui.theme.RoomBlueSoft
 import org.koin.androidx.compose.koinViewModel
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Títulos e iconos por paso
-// ─────────────────────────────────────────────────────────────────────────────
-
 private val stepTitles = listOf(
     "Tu identidad",
     "Tu situación",
@@ -78,7 +74,6 @@ fun OnboardingScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // ── Fondo con gradiente sutil ──────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -102,12 +97,10 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // ── Indicador de progreso visual ──────────────────────────────
             StepProgressHeader(currentStep = step, totalSteps = 3)
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── Título animado del paso ───────────────────────────────────
             AnimatedContent(
                 targetState = step,
                 transitionSpec = {
@@ -151,7 +144,6 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Contenido del paso en card ────────────────────────────────
             Surface(
                 modifier        = Modifier
                     .fillMaxWidth()
@@ -179,7 +171,6 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Error ─────────────────────────────────────────────────────
             AnimatedVisibility(
                 visible = (stepError ?: errorMessage) != null,
                 enter   = fadeIn() + expandVertically(),
@@ -216,14 +207,12 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Botones de navegación ─────────────────────────────────────
             Row(
                 modifier              = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Botón Atrás (visible desde paso 2)
                 AnimatedVisibility(
                     visible = step > 1,
                     enter   = fadeIn() + expandHorizontally(),
@@ -247,7 +236,6 @@ fun OnboardingScreen(
                     }
                 }
 
-                // Botón Siguiente / Finalizar
                 Button(
                     onClick  = { if (step == 3) viewModel.finish() else viewModel.nextStep() },
                     modifier = Modifier
@@ -281,7 +269,6 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Saltar ────────────────────────────────────────────────────
             TextButton(
                 onClick = {
                     navController.navigate(Screen.Home.route) {
@@ -301,10 +288,6 @@ fun OnboardingScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Indicador de progreso con líneas conectadas
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun StepProgressHeader(currentStep: Int, totalSteps: Int) {
     Row(
@@ -315,7 +298,6 @@ private fun StepProgressHeader(currentStep: Int, totalSteps: Int) {
             val isCompleted = i < currentStep
             val isCurrent   = i == currentStep
 
-            // Círculo del paso
             Surface(
                 modifier = Modifier.size(if (isCurrent) 36.dp else 30.dp),
                 shape    = CircleShape,
@@ -345,8 +327,6 @@ private fun StepProgressHeader(currentStep: Int, totalSteps: Int) {
                     }
                 }
             }
-
-            // Línea conectora
             if (i < totalSteps) {
                 val lineColor by animateColorAsState(
                     targetValue   = if (i < currentStep) RoomBlue else MaterialTheme.colorScheme.outlineVariant,
@@ -364,10 +344,6 @@ private fun StepProgressHeader(currentStep: Int, totalSteps: Int) {
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Campo de formulario reutilizable
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun OnboardingField(
@@ -411,10 +387,6 @@ private fun OnboardingField(
     )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Paso 1 — Foto + nombre de usuario
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun StepOne(viewModel: OnboardingViewModel) {
     val username        by viewModel.username.collectAsState()
@@ -430,9 +402,7 @@ private fun StepOne(viewModel: OnboardingViewModel) {
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
 
-        // ── Selector de foto ─────────────────────────────────────────────────
         Box(contentAlignment = Alignment.Center) {
-            // Anillo exterior decorativo
             Box(
                 modifier = Modifier
                     .size(124.dp)
@@ -473,7 +443,6 @@ private fun StepOne(viewModel: OnboardingViewModel) {
                     )
                 }
 
-                // Overlay de cámara
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -513,7 +482,6 @@ private fun StepOne(viewModel: OnboardingViewModel) {
             }
         }
 
-        // Texto de ayuda
         Text(
             text      = if (profileImageUrl.isNotEmpty()) "Toca para cambiar la foto"
             else "La foto ayuda a generar confianza",
@@ -534,10 +502,6 @@ private fun StepOne(viewModel: OnboardingViewModel) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Paso 2 — Edad, ciudad, bio y presupuesto
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun StepTwo(viewModel: OnboardingViewModel) {
     val age    by viewModel.age.collectAsState()
@@ -547,7 +511,6 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
 
-        // Edad + Ciudad en fila
         Row(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -571,7 +534,6 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
             )
         }
 
-        // Presupuesto
         OnboardingField(
             value         = budget,
             onValueChange = { viewModel.onBudgetChanged(it) },
@@ -581,7 +543,6 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
             keyboardType  = KeyboardType.Number
         )
 
-        // Ayuda presupuesto
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color    = RoomBlueSoft,
@@ -609,7 +570,6 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-        // Bio
         OnboardingField(
             value         = bio,
             onValueChange = { viewModel.onBioChanged(it) },
@@ -621,17 +581,12 @@ private fun StepTwo(viewModel: OnboardingViewModel) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Paso 3 — Hábitos / Personalidad
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun StepThree(viewModel: OnboardingViewModel) {
     val selectedHabits by viewModel.selectedHabits.collectAsState()
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-        // Contador
         Row(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -665,7 +620,6 @@ private fun StepThree(viewModel: OnboardingViewModel) {
             }
         }
 
-        // Grid de chips
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement   = Arrangement.spacedBy(8.dp),
@@ -680,8 +634,6 @@ private fun StepThree(viewModel: OnboardingViewModel) {
                 )
             }
         }
-
-        // Aviso mínimo
         if (selectedHabits.isEmpty()) {
             Text(
                 "Selecciona al menos uno para continuar",

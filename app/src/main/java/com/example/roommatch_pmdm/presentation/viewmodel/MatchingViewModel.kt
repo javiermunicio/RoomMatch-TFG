@@ -77,32 +77,18 @@ class MatchingViewModel(
         }
     }
 
-    /**
-     * Puntuación de compatibilidad entre el usuario actual y un candidato.
-     *
-     * | Criterio                          | Puntos |
-     * |-----------------------------------|--------|
-     * | Misma ciudad                      |   10   |
-     * | Cada hábito en común              |    3   |
-     * | Presupuesto dentro de ±200 €      |    5   |
-     * | Presupuesto dentro de ±500 €      |    2   |
-     * | Perfil completo (bio + foto)      |    2   |
-     */
     private fun computeCompatibilityScore(currentUser: User, candidate: User): Int {
         var score = 0
 
-        // ── Ciudad ────────────────────────────────────────────────────────────
         if (currentUser.location.isNotBlank() &&
             candidate.location.equals(currentUser.location, ignoreCase = true)
         ) {
             score += 10
         }
 
-        // ── Hábitos en común ─────────────────────────────────────────────────
         val commonHabits = candidate.habits.count { it in currentUser.habits }
         score += commonHabits * 3
 
-        // ── Presupuesto similar ───────────────────────────────────────────────
         if (currentUser.budget > 0 && candidate.budget > 0) {
             val budgetDiff = abs(currentUser.budget - candidate.budget)
             score += when {
@@ -112,7 +98,6 @@ class MatchingViewModel(
             }
         }
 
-        // ── Perfil completo (bio + foto) ──────────────────────────────────────
         if (candidate.bio.isNotBlank() && candidate.profileImage.isNotBlank()) {
             score += 2
         }

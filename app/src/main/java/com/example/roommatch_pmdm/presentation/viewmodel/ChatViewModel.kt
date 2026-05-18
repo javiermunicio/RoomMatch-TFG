@@ -169,8 +169,6 @@ class ChatDetailViewModel(
 
     private val _actionDone = MutableStateFlow<String?>(null)
     val actionDone: StateFlow<String?> = _actionDone
-
-    // Flag para evitar notificaciones mientras el chat está abierto
     private val _isChatActive = MutableStateFlow(false)
 
     private var messagesJob: Job? = null
@@ -204,7 +202,6 @@ class ChatDetailViewModel(
                 val previousIds = _messages.value.map { it.id }.toSet()
                 val newIncoming = sorted.filter { it.id !in previousIds && it.senderId != uid }
 
-                // Solo notificar si hay mensajes nuevos Y el chat no está en primer plano
                 if (_messages.value.isNotEmpty() && newIncoming.isNotEmpty() && !_isChatActive.value) {
                     val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         ContextCompat.checkSelfPermission(

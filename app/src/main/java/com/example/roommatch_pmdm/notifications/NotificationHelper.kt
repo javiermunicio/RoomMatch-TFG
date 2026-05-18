@@ -14,13 +14,9 @@ import com.example.roommatch_pmdm.MainActivity
 import com.example.roommatch_pmdm.R
 
 object NotificationHelper {
-
-    // IDs de canales
     const val CHANNEL_CHAT    = "channel_chat"
     const val CHANNEL_MATCH   = "channel_match"
     const val CHANNEL_INTEREST = "channel_interest"
-
-    // IDs de notificaciones
     private const val NOTIF_CHAT     = 1001
     private const val NOTIF_MATCH    = 1002
     private const val NOTIF_INTEREST = 1003
@@ -63,8 +59,6 @@ object NotificationHelper {
             )
         }
     }
-
-    // Crea el PendingIntent que abre MainActivity
     private fun mainPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

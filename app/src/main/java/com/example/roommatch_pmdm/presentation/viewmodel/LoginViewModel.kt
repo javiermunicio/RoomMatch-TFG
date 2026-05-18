@@ -49,7 +49,6 @@ class LoginViewModel(
                 onSuccess = { user ->
                     fcmTokenManager.refreshAndSaveToken(user.uid)
 
-                    // Arrancar el listener de notificaciones Firestore
                     context.startService(
                         Intent(context, NotificationListenerService::class.java)
                     )

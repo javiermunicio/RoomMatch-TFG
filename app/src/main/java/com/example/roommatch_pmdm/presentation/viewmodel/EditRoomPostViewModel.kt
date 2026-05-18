@@ -93,22 +93,18 @@ class EditRoomPostViewModel(
         viewModelScope.launch {
             _isLoading.value = true
 
-            // 1. Subir las imágenes nuevas a Cloudinary
             val newUrls = mutableListOf<String>()
             val uris = _newImageUris.value
             uris.forEachIndexed { index, uri ->
                 _uploadProgress.value = "Subiendo imagen ${index + 1} de ${uris.size}…"
                 storageRepository.uploadProfileImage(uri).fold(
                     onSuccess = { url -> newUrls.add(url) },
-                    onFailure = { /* imagen fallida: la saltamos */ }
+                    onFailure = { }
                 )
             }
             _uploadProgress.value = null
 
-            // 2. Combinar URLs existentes (no eliminadas) + nuevas subidas
             val updatedPost = post.copy(images = post.images + newUrls)
-
-            // 3. Guardar a través del repositorio
             val success = updateRoomPostUseCase(updatedPost)
             if (success) {
                 _isSaved.value = true

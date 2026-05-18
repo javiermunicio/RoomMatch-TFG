@@ -78,8 +78,6 @@ fun ProfileScreen(
     LaunchedEffect(isSaved) {
         if (isSaved) viewModel.clearSaved()
     }
-
-    // ── Diálogo logout ─────────────────────────────────────────────────────
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -110,7 +108,6 @@ fun ProfileScreen(
             .verticalScroll(rememberScrollState())
     ) {
 
-        // ── TopAppBar ──────────────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth(),
             shadowElevation = 4.dp,
@@ -130,7 +127,6 @@ fun ProfileScreen(
                     color      = MaterialTheme.colorScheme.primary
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // Botón modo oscuro/claro
                     IconButton(onClick = { themeViewModel.toggleTheme() }) {
                         Icon(
                             imageVector        = if (isDark) Icons.Filled.LightMode
@@ -139,7 +135,6 @@ fun ProfileScreen(
                             tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
-                    // Botón logout
                     IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(
                             Icons.Filled.ExitToApp,
@@ -150,8 +145,6 @@ fun ProfileScreen(
                 }
             }
         }
-
-        // ── Header con avatar ──────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth(),
             color           = MaterialTheme.colorScheme.surface,
@@ -161,7 +154,6 @@ fun ProfileScreen(
                 modifier            = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Avatar
                 Box(
                     modifier         = Modifier
                         .size(110.dp)
@@ -177,7 +169,6 @@ fun ProfileScreen(
                         contentScale       = ContentScale.Crop,
                         modifier           = Modifier.fillMaxSize()
                     )
-                    // Overlay cámara solo en modo edición
                     Column() {
                         AnimatedVisibility(
                             visible = isEditing,
@@ -211,7 +202,6 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Nombre y edad
                 val displayAge = if (age.isNotEmpty()) ", $age años" else ""
                 Text(
                     "$username$displayAge",
@@ -221,7 +211,6 @@ fun ProfileScreen(
                     fontSize   = 20.sp
                 )
 
-                // Ubicación
                 if (location.isNotEmpty()) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -242,7 +231,6 @@ fun ProfileScreen(
                     }
                 }
 
-                // Bio (solo vista)
                 if (bio.isNotEmpty() && !isEditing) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
@@ -254,7 +242,6 @@ fun ProfileScreen(
                     )
                 }
 
-                // Presupuesto (solo vista)
                 if (budget.isNotEmpty() && budget != "0" && !isEditing) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Surface(
@@ -281,7 +268,6 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Formulario de edición (animado) ────────────────────────────────
         AnimatedVisibility(
             visible = isEditing,
             enter   = expandVertically() + fadeIn(),
@@ -291,7 +277,6 @@ fun ProfileScreen(
                 modifier            = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Sección datos personales
                 ProfileFormSection(title = "Datos personales") {
                     ProfileFormField(
                         value         = username,
@@ -338,9 +323,7 @@ fun ProfileScreen(
                     )
                 }
 
-                // Sección hábitos
                 ProfileFormSection(title = "Rasgos de personalidad") {
-                    // Chips existentes
                     if (habits.isNotEmpty()) {
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -357,7 +340,6 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // Campo para añadir nuevo rasgo
                     Row(
                         modifier          = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -397,7 +379,6 @@ fun ProfileScreen(
             }
         }
 
-        // ── Chips de hábitos (solo vista, fuera de edición) ────────────────
         AnimatedVisibility(
             visible = !isEditing && habits.isNotEmpty(),
             enter   = expandVertically() + fadeIn(),
@@ -442,7 +423,6 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Error ──────────────────────────────────────────────────────────
         AnimatedVisibility(
             visible = errorMessage != null,
             enter   = fadeIn(),
@@ -478,12 +458,10 @@ fun ProfileScreen(
             }
         }
 
-        // ── Botones acción ─────────────────────────────────────────────────
         Column(
             modifier            = Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Editar / Guardar
             Button(
                 onClick  = {
                     if (isEditing) viewModel.saveProfile() else viewModel.toggleEditMode()
@@ -514,7 +492,6 @@ fun ProfileScreen(
                 }
             }
 
-            // Cancelar edición (solo visible al editar)
             AnimatedVisibility(
                 visible = isEditing,
                 enter   = expandVertically() + fadeIn(),
@@ -543,8 +520,6 @@ fun ProfileScreen(
     }
 }
 
-// ── Sección del formulario ────────────────────────────────────────────────────
-
 @Composable
 private fun ProfileFormSection(
     title:   String,
@@ -570,8 +545,6 @@ private fun ProfileFormSection(
         }
     }
 }
-
-// ── Campo del formulario ──────────────────────────────────────────────────────
 
 @Composable
 private fun ProfileFormField(
@@ -610,8 +583,6 @@ private fun ProfileFormField(
         )
     )
 }
-
-// ── Chip editable con X ───────────────────────────────────────────────────────
 
 @Composable
 private fun EditableTraitChip(label: String, onRemove: () -> Unit) {

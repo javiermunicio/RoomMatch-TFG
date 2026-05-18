@@ -51,7 +51,6 @@ fun InterestedUsersListScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
-                // ── TopAppBar adaptada al tema ────────────────────────────────
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor    = MaterialTheme.colorScheme.surface,
                     titleContentColor = RoomBlue,
@@ -101,9 +100,6 @@ fun InterestedUsersListScreen(
         }
     }
 }
-
-// ── Card ──────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun InterestedUserCard(
     item: InterestedUserItem,
@@ -115,7 +111,6 @@ private fun InterestedUserCard(
     Card(
         modifier  = Modifier.fillMaxWidth().clickable { onViewProfile() },
         elevation = CardDefaults.cardElevation(2.dp),
-        // ── fondo de la card adaptado al tema ─────────────────────────────
         colors    = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -125,7 +120,6 @@ private fun InterestedUserCard(
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ── Avatar ────────────────────────────────────────────────────────
             Surface(
                 modifier = Modifier.size(52.dp),
                 shape    = CircleShape,
@@ -150,7 +144,6 @@ private fun InterestedUserCard(
                 }
             }
 
-            // ── Datos del usuario ─────────────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text       = user?.username?.ifEmpty { item.interest.interestedUsername }
@@ -175,7 +168,6 @@ private fun InterestedUserCard(
                 }
             }
 
-            // ── Botón chat ────────────────────────────────────────────────────
             IconButton(onClick = onChat) {
                 Icon(
                     Icons.AutoMirrored.Filled.Chat,

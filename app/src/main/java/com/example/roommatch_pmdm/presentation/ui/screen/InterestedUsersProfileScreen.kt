@@ -56,7 +56,6 @@ fun InterestedUsersProfileScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
-                // ── TopAppBar adaptada al tema ────────────────────────────────
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor         = MaterialTheme.colorScheme.surface,
                     titleContentColor      = RoomBlue,
@@ -69,7 +68,6 @@ fun InterestedUsersProfileScreen(
                 Surface(
                     modifier        = Modifier.fillMaxWidth(),
                     shadowElevation = 8.dp,
-                    // ── bottom bar adaptada al tema ───────────────────────────
                     color           = MaterialTheme.colorScheme.surface
                 ) {
                     Button(
@@ -123,18 +121,14 @@ fun InterestedUsersProfileScreen(
     }
 }
 
-// ── Contenido del perfil ──────────────────────────────────────────────────────
-
 @Composable
 private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            // ── fondo adaptado al tema ────────────────────────────────────────
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Header ───────────────────────────────────────────────────────────
         Surface(
             modifier        = Modifier.fillMaxWidth(),
             color           = MaterialTheme.colorScheme.surface,
@@ -144,12 +138,10 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
                 modifier            = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Avatar
                 Box(
                     modifier = Modifier
                         .size(110.dp)
                         .clip(CircleShape)
-                        // fondo del avatar adaptado al tema
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .border(3.dp, RoomBlue, CircleShape),
                     contentAlignment = Alignment.Center
@@ -205,7 +197,6 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Bio ──────────────────────────────────────────────────────────────
         if (user.bio.isNotEmpty()) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -232,7 +223,6 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // ── Presupuesto ──────────────────────────────────────────────────────
         if (user.budget > 0) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -267,7 +257,6 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // ── Hábitos ──────────────────────────────────────────────────────────
         if (user.habits.isNotEmpty()) {
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -307,7 +296,6 @@ private fun UserProfileContent(user: User, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // Espacio para el botón inferior
         Spacer(modifier = Modifier.height(88.dp))
     }
 }
