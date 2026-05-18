@@ -1,10 +1,13 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
+import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
 import com.example.roommatch_pmdm.notifications.FcmTokenManager
+import com.example.roommatch_pmdm.notifications.NotificationListenerService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,7 +15,8 @@ import kotlinx.coroutines.launch
 class RegisterViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val fcmTokenManager: FcmTokenManager
+    private val fcmTokenManager: FcmTokenManager,
+    private val context: Context
 ) : ViewModel() {
 
     private val _username        = MutableStateFlow("")
@@ -67,6 +71,12 @@ class RegisterViewModel(
                         username = _username.value.trim()
                     )
                     fcmTokenManager.refreshAndSaveToken(firebaseUser.uid)
+
+                    // Arrancar el listener de notificaciones igual que en el login
+                    context.startService(
+                        Intent(context, NotificationListenerService::class.java)
+                    )
+
                     _registerSuccess.value = true
                     _errorMessage.value    = null
                 },
