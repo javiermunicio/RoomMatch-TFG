@@ -123,18 +123,6 @@ fun ChatListScreen(
 
 @Composable
 fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> Unit) {
-    // ── Lógica de estado del último mensaje ──────────────────────────────────
-    //
-    //  iSentLast → el último mensaje lo envié yo
-    //
-    //  Si iSentLast:
-    //    · chatUser.isRead == true  → el otro lo leyó   → DoneAll azul  (✓✓ azul)
-    //    · chatUser.isRead == false → aún no lo leyó    → Check gris    (✓ gris)
-    //
-    //  Si !iSentLast:
-    //    · chatUser.isRead == false → tengo mensajes nuevos → badge punto azul
-    //    · chatUser.isRead == true  → ya los leí            → sin badge
-    //
     val iSentLast = chatUser.lastMessageSenderId == currentUserId
     val hasUnread = !iSentLast && !chatUser.isRead && chatUser.lastMessage != "Toca para chatear"
 
@@ -159,7 +147,6 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ── Avatar ────────────────────────────────────────────────────────
             Surface(
                 modifier = Modifier.size(56.dp),
                 color    = MaterialTheme.colorScheme.primary,
@@ -172,7 +159,6 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
                 )
             }
 
-            // ── Nombre + último mensaje ───────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     chatUser.username,
@@ -183,17 +169,14 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
                     verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // ── Ticks de estado (solo cuando yo envié el último mensaje) ─
                     if (iSentLast && chatUser.lastMessage != "Toca para chatear") {
                         Icon(
-                            // DoneAll (✓✓) si el otro lo leyó, Check (✓) si no
                             imageVector = if (chatUser.isRead)
                                 Icons.Default.DoneAll
                             else
                                 Icons.Default.Check,
                             contentDescription = if (chatUser.isRead) "Leído" else "Enviado",
                             modifier = Modifier.size(13.dp),
-                            // Azul si leído, gris si solo enviado — igual que ChatDetailScreen
                             tint = if (chatUser.isRead)
                                 MaterialTheme.colorScheme.primary
                             else
@@ -213,7 +196,6 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
                 }
             }
 
-            // ── Hora + badge de no leído ──────────────────────────────────────
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -241,7 +223,6 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                 }
-                // Punto azul solo cuando hay mensajes sin leer del otro
                 if (hasUnread) {
                     Surface(
                         modifier = Modifier.size(10.dp),
@@ -275,14 +256,11 @@ fun ChatDetailScreen(
     var showBlockDialog   by remember { mutableStateOf(false) }
     var showUnblockDialog by remember { mutableStateOf(false) }
 
-    // Avisar al ViewModel que el chat está en primer plano
     LaunchedEffect(chatUserId) {
         viewModel.onChatOpened()
         viewModel.loadMessages(chatUserId)
         viewModel.markMessagesAsRead(chatUserId)
     }
-
-    // Avisar al ViewModel cuando se abandona la pantalla
     DisposableEffect(Unit) {
         onDispose { viewModel.onChatClosed() }
     }
@@ -297,8 +275,6 @@ fun ChatDetailScreen(
             navController?.popBackStack()
         }
     }
-
-    // ── Diálogo borrar chat ────────────────────────────────────────────────
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -315,8 +291,6 @@ fun ChatDetailScreen(
             }
         )
     }
-
-    // ── Diálogo bloquear ───────────────────────────────────────────────────
     if (showBlockDialog) {
         AlertDialog(
             onDismissRequest = { showBlockDialog = false },
@@ -333,8 +307,6 @@ fun ChatDetailScreen(
             }
         )
     }
-
-    // ── Diálogo desbloquear ────────────────────────────────────────────────
     if (showUnblockDialog) {
         AlertDialog(
             onDismissRequest = { showUnblockDialog = false },

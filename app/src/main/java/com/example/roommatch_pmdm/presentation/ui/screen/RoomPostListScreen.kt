@@ -60,7 +60,6 @@ fun RoomPostListScreen(
 
     var filtersExpanded  by remember { mutableStateOf(false) }
 
-    // Cuenta de filtros activos para el badge
     val activeFilterCount = remember(filterCity, filterMaxPrice, filterRoommates) {
         listOf(filterCity, filterMaxPrice, filterRoommates).count { it.isNotBlank() }
     }
@@ -73,7 +72,6 @@ fun RoomPostListScreen(
                 color           = MaterialTheme.colorScheme.surface
             ) {
                 Column {
-                    // ── TopAppBar ──────────────────────────────────────────────
                     Row(
                         modifier              = Modifier
                             .fillMaxWidth()
@@ -88,7 +86,6 @@ fun RoomPostListScreen(
                             color      = MaterialTheme.colorScheme.primary
                         )
 
-                        // Botón filtros con badge
                         Box {
                             FilledTonalIconButton(
                                 onClick = { filtersExpanded = !filtersExpanded },
@@ -106,7 +103,6 @@ fun RoomPostListScreen(
                                 )
                             }
 
-                            // Badge con número de filtros activos
                             if (activeFilterCount > 0) {
                                 Surface(
                                     modifier = Modifier
@@ -129,7 +125,6 @@ fun RoomPostListScreen(
                         }
                     }
 
-                    // ── Panel de filtros desplegable ───────────────────────────
                     AnimatedVisibility(
                         visible = filtersExpanded,
                         enter   = expandVertically(tween(250)) + fadeIn(tween(200)),
@@ -164,7 +159,6 @@ fun RoomPostListScreen(
     ) { innerPadding ->
 
         if (roomPosts.isEmpty()) {
-            // Estado vacío
             Box(
                 modifier         = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center
@@ -217,7 +211,6 @@ fun RoomPostListScreen(
                 contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Contador de resultados
                 item {
                     Text(
                         "${roomPosts.size} anuncio${if (roomPosts.size != 1) "s" else ""}${
@@ -240,14 +233,12 @@ fun RoomPostListScreen(
                     )
                 }
 
-                // Padding final para que el FAB no tape el último item
                 item { Spacer(modifier = Modifier.height(72.dp)) }
             }
         }
     }
 }
 
-// ── Panel de filtros rediseñado ───────────────────────────────────────────────
 
 @Composable
 private fun FilterPanel(
@@ -271,7 +262,6 @@ private fun FilterPanel(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
-            // ── Campo Ciudad ───────────────────────────────────────────────
             FilterField(
                 value         = filterCity,
                 onValueChange = onCityChange,
@@ -288,7 +278,6 @@ private fun FilterPanel(
                 }
             )
 
-            // ── Fila Precio + Compañeros ───────────────────────────────────
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -330,7 +319,6 @@ private fun FilterPanel(
                 )
             }
 
-            // ── Chips de filtros activos + botón limpiar ───────────────────
             AnimatedVisibility(
                 visible = hasActiveFilters,
                 enter   = expandVertically() + fadeIn(),
@@ -341,7 +329,6 @@ private fun FilterPanel(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Chips de filtros activos
                     if (filterCity.isNotBlank()) {
                         ActiveFilterChip(label = filterCity, onRemove = { onCityChange("") })
                     }
@@ -465,10 +452,6 @@ private fun ActiveFilterChip(label: String, onRemove: () -> Unit) {
         }
     }
 }
-
-
-// ── Card del anuncio (sin cambios de lógica, pequeños ajustes visuales) ───────
-
 @Composable
 fun RoomPostCard(
     post: RoomPost,
@@ -529,7 +512,6 @@ fun RoomPostCard(
                     .padding(horizontal = 14.dp, vertical = 12.dp)
             ) {
 
-                // Título + botón borrar
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -559,7 +541,6 @@ fun RoomPostCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // Dirección
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.LocationOn,
@@ -577,7 +558,6 @@ fun RoomPostCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Precio en pill
                 Surface(
                     color = pillBg,
                     shape = MaterialTheme.shapes.extraLarge
@@ -591,7 +571,6 @@ fun RoomPostCard(
                     )
                 }
 
-                // Descripción
                 if (post.description.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -605,7 +584,6 @@ fun RoomPostCard(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Chips de compañeros y fecha
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (post.roommates > 0) {
                         InfoPill(
@@ -627,7 +605,6 @@ fun RoomPostCard(
             }
         }
 
-        // Footer
         HorizontalDivider(thickness = 0.5.dp, color = dividerColor)
         Row(
             modifier              = Modifier

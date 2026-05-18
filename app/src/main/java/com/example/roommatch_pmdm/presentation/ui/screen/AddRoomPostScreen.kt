@@ -68,8 +68,6 @@ fun AddRoomPostScreen(
             }
         }
     }
-
-    // ── Diálogo de confirmación ────────────────────────────────────────────
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -91,7 +89,6 @@ fun AddRoomPostScreen(
             }
         )
     }
-
     Scaffold(
         topBar = {
             Surface(
@@ -131,8 +128,6 @@ fun AddRoomPostScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-
-            // ── Sección fotos ──────────────────────────────────────────────
             FormSection(title = "Fotos del piso") {
                 ImagePickerSection(
                     selectedUris  = selectedUris,
@@ -143,7 +138,6 @@ fun AddRoomPostScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Sección información básica ─────────────────────────────────
             FormSection(title = "Información básica") {
                 FormField(
                     value         = roomPost.title,
@@ -165,7 +159,6 @@ fun AddRoomPostScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Sección ubicación ──────────────────────────────────────────
             FormSection(title = "Ubicación") {
                 FormField(
                     value         = roomPost.address,
@@ -186,7 +179,6 @@ fun AddRoomPostScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Sección detalles ───────────────────────────────────────────
             FormSection(title = "Detalles") {
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
@@ -223,7 +215,6 @@ fun AddRoomPostScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Progreso de subida ─────────────────────────────────────────
             AnimatedVisibility(
                 visible = uploadProgress != null,
                 enter   = fadeIn(),
@@ -252,7 +243,6 @@ fun AddRoomPostScreen(
                 }
             }
 
-            // ── Error de validación ────────────────────────────────────────
             AnimatedVisibility(
                 visible = validationError != null,
                 enter   = fadeIn(),
@@ -286,7 +276,6 @@ fun AddRoomPostScreen(
                 }
             }
 
-            // ── Botones ────────────────────────────────────────────────────
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -340,8 +329,6 @@ fun AddRoomPostScreen(
     }
 }
 
-// ── Contenedor de sección con título ─────────────────────────────────────────
-
 @Composable
 private fun FormSection(
     title:   String,
@@ -367,8 +354,6 @@ private fun FormSection(
         }
     }
 }
-
-// ── Campo de formulario unificado ─────────────────────────────────────────────
 
 @Composable
 private fun FormField(
@@ -409,8 +394,6 @@ private fun FormField(
         )
     )
 }
-
-// ── Selector de imágenes ──────────────────────────────────────────────────────
 
 @Composable
 private fun ImagePickerSection(
@@ -464,7 +447,6 @@ private fun ImagePickerSection(
         }
     }
 }
-
 @Composable
 private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
     Box(modifier = Modifier.size(90.dp)) {
@@ -495,7 +477,6 @@ private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
         }
     }
 }
-
 @Composable
 private fun AddImageButton(onClick: () -> Unit, isEmpty: Boolean) {
     Box(

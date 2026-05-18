@@ -23,7 +23,7 @@ class InterestedUserProfileViewModel(
             _isLoading.value = true
             userRepository.getUser(userId).fold(
                 onSuccess = { _user.value = it },
-                onFailure = { /* usuario no encontrado */ }
+                onFailure = { }
             )
             _isLoading.value = false
         }

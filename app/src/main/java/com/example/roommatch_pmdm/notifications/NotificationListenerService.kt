@@ -24,14 +24,11 @@ class NotificationListenerService : Service() {
     private val firestore = FirebaseFirestore.getInstance()
     private var listenerRegistration: ListenerRegistration? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    // Flag para evitar registrar el listener más de una vez
     private var isListening = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Si ya hay un listener activo, no crear otro
         if (!isListening) {
             startListening()
         }
@@ -40,10 +37,7 @@ class NotificationListenerService : Service() {
 
     private fun startListening() {
         val uid = authRepository.currentUser?.uid ?: return
-
-        // Eliminar listener anterior si existiera por alguna razón
         listenerRegistration?.remove()
-
         listenerRegistration = firestore
             .collection("notifications")
             .document(uid)

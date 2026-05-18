@@ -1,4 +1,3 @@
-// ListRoomPostsUseCase.kt
 package com.example.roommatch_pmdm.domain.usecase
 
 import com.example.roommatch_pmdm.data.repositories.RoomPostRepository

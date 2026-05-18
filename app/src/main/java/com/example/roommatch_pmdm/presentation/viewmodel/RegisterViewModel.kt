@@ -72,7 +72,6 @@ class RegisterViewModel(
                     )
                     fcmTokenManager.refreshAndSaveToken(firebaseUser.uid)
 
-                    // Arrancar el listener de notificaciones igual que en el login
                     context.startService(
                         Intent(context, NotificationListenerService::class.java)
                     )

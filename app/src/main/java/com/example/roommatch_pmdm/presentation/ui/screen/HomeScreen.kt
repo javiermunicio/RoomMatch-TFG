@@ -100,7 +100,6 @@ fun HomeScreen(navController: NavController) {
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 InterestedUsersProfileScreen(userId = userId, navController = innerNavController)
             }
-            // ── CHAT ──────────────────────────────────────────────────────
             composable(Screen.ChatList.route) {
                 ChatListScreen(navController = innerNavController)
             }
@@ -108,7 +107,6 @@ fun HomeScreen(navController: NavController) {
                 val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
                 ChatDetailScreen(chatUserId = chatUserId, navController = innerNavController)
             }
-            // ── PERFIL ────────────────────────────────────────────────────
             composable(Screen.Profile.route) {
                 ProfileScreen(navController = navController)
             }

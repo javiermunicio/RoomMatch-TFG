@@ -17,10 +17,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
     fun conversationId(uid1: String, uid2: String): String =
         if (uid1 < uid2) "${uid1}_${uid2}" else "${uid2}_${uid1}"
 
-    /**
-     * Devuelve el timestamp a partir del cual [userId] puede ver mensajes.
-     * Si el usuario borró el chat anteriormente, solo verá mensajes posteriores.
-     */
     private suspend fun getDeletedAtForUser(convId: String, userId: String): Long {
         return try {
             val snap = messagesCollection.document(convId).get().await()
@@ -78,8 +74,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
 
     suspend fun getUserData(userId: String): User? =
         usersCollection.document(userId).get().await().toObject(User::class.java)
-
-    // Obtiene el último mensaje visible para currentUserId (one-shot)
     suspend fun getLastMessage(currentUserId: String, otherUserId: String): ChatMessage? {
         val convId = conversationId(currentUserId, otherUserId)
         val deletedAtForMe = getDeletedAtForUser(convId, currentUserId)
@@ -91,8 +85,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
         }.filter { it.timestamp > deletedAtForMe }
             .maxByOrNull { it.timestamp }
     }
-
-    // Escucha en tiempo real el último mensaje visible para currentUserId
     fun getLastMessageFlow(currentUserId: String, otherUserId: String): Flow<ChatMessage?> =
         callbackFlow {
             val convId = conversationId(currentUserId, otherUserId)
@@ -109,8 +101,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
                 }
             awaitClose { listener.remove() }
         }
-
-    // Cuenta mensajes no leídos que me enviaron, respetando soft-delete
     fun getUnreadCountFlow(currentUserId: String, otherUserId: String): Flow<Int> =
         callbackFlow {
             val convId = conversationId(currentUserId, otherUserId)
@@ -160,13 +150,10 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
                 val otherUserId = participants.firstOrNull { it != currentUserId }
                     ?: return@mapNotNull null
 
-                // Si el usuario borró esta conversación, solo mostrarla si llegaron mensajes nuevos
                 @Suppress("UNCHECKED_CAST")
                 val deletedFor = doc.get("deletedFor") as? Map<String, Long> ?: emptyMap()
                 val deletedAt = deletedFor[currentUserId]
-
                 if (deletedAt != null) {
-                    // Comprobar si hay mensajes posteriores al borrado
                     val hasNewMessages = try {
                         val msgs = doc.reference.collection("msgs")
                             .orderBy("timestamp", FirestoreQuery.Direction.DESCENDING)
@@ -186,17 +173,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             emptyList()
         }
     }
-
-    /**
-     * Soft-delete: marca la conversación como borrada solo para [currentUserId],
-     * guardando el timestamp actual en "deletedFor.<currentUserId>".
-     * El otro usuario sigue viendo su historial intacto.
-     *
-     * Si el otro usuario ya había borrado también, se elimina todo físicamente.
-     *
-     * Si el otro envía un mensaje nuevo después, la conversación reaparecerá
-     * para [currentUserId] mostrando solo los mensajes posteriores al borrado.
-     */
     suspend fun deleteConversation(currentUserId: String, otherUserId: String) {
         try {
             val convId  = conversationId(currentUserId, otherUserId)
@@ -210,7 +186,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
             val otherAlsoDeleted = deletedFor.containsKey(otherUserId)
 
             if (otherAlsoDeleted) {
-                // Ambos borraron: eliminar físicamente todos los mensajes y el documento
                 val msgs = convRef.collection("msgs").get().await()
                 val batch = firestore.batch()
                 for (doc in msgs.documents) {
@@ -219,7 +194,6 @@ class ChatRepository(private val firestore: FirebaseFirestore) {
                 batch.commit().await()
                 convRef.delete().await()
             } else {
-                // Solo lo borra este usuario: registrar el timestamp de borrado
                 convRef.update(
                     "deletedFor.$currentUserId", System.currentTimeMillis()
                 ).await()

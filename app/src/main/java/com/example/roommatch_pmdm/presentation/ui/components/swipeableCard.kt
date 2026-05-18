@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.launch
 
-// Añade esta función al final de tu archivo (fuera de tus Composables)
 fun Modifier.swipeableCard(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,

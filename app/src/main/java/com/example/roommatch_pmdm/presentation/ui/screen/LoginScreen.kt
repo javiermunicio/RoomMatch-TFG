@@ -46,8 +46,6 @@ fun LoginScreen(
     val isLoading    by viewModel.isLoading.collectAsState()
     val loginSuccess by viewModel.loginSuccess.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-
-    // Colores que se adaptan al tema
     val topBgColor    = MaterialTheme.colorScheme.primaryContainer
     val cardBgColor   = MaterialTheme.colorScheme.surface
     val fieldBorder   = MaterialTheme.colorScheme.primary
@@ -66,7 +64,6 @@ fun LoginScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // ── Fondo superior (usa primaryContainer del tema) ────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -74,7 +71,6 @@ fun LoginScreen(
                 .background(topBgColor)
         )
 
-        // ── Fondo inferior (usa surface del tema) ─────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -92,7 +88,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(56.dp))
 
-            // ── Logo en círculo ───────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(110.dp)
@@ -109,7 +104,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── "RoomMatch" bicolor ───────────────────────────────────────
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(color = FigmaBlue)) { append("Room") }
@@ -131,7 +125,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Card con formulario ───────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -141,7 +134,6 @@ fun LoginScreen(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
 
-                    // Usuario
                     AdaptiveField(
                         value         = username,
                         onValueChange = { viewModel.onUsernameChanged(it) },
@@ -154,7 +146,6 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Contraseña
                     AdaptiveField(
                         value            = password,
                         onValueChange    = { viewModel.onPasswordChanged(it) },
@@ -170,7 +161,6 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Error
                     AnimatedVisibility(
                         visible = errorMessage != null,
                         enter   = fadeIn() + expandVertically(),
@@ -186,7 +176,6 @@ fun LoginScreen(
                         }
                     }
 
-                    // ¿No tienes cuenta?
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
@@ -216,7 +205,6 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Botón Iniciar Sesión
                     Button(
                         onClick  = { viewModel.login() },
                         modifier = Modifier
@@ -271,7 +259,6 @@ fun LoginScreen(
     }
 }
 
-// ── Campo adaptativo al tema ──────────────────────────────────────────────────
 
 @Composable
 fun AdaptiveField(
@@ -342,7 +329,6 @@ fun AdaptiveField(
     }
 }
 
-// Alias de compatibilidad: FigmaField sigue funcionando para RegisterScreen
 @Composable
 fun FigmaField(
     value:            String,

@@ -44,8 +44,6 @@ class ProfileViewModel(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
-
-    // Campos editables
     private val _username = MutableStateFlow("")
     val username: StateFlow<String> = _username
 

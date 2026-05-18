@@ -67,8 +67,6 @@ fun EditRoomPostScreen(
             navController.popBackStack()
         }
     }
-
-    // ── Diálogo de confirmación ────────────────────────────────────────────
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
@@ -117,8 +115,6 @@ fun EditRoomPostScreen(
             }
         }
     ) { innerPadding ->
-
-        // ── Estado de carga inicial ────────────────────────────────────────
         if (isLoading && roomPost.id.isEmpty()) {
             Box(
                 modifier         = Modifier.fillMaxSize().padding(innerPadding),
@@ -135,8 +131,6 @@ fun EditRoomPostScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-
-                // ── Sección fotos ──────────────────────────────────────────
                 EditFormSection(title = "Fotos del piso") {
                     EditImagePickerSection(
                         existingUrls     = roomPost.images,
@@ -149,7 +143,6 @@ fun EditRoomPostScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ── Sección información básica ─────────────────────────────
                 EditFormSection(title = "Información básica") {
                     EditFormField(
                         value         = roomPost.title,
@@ -171,7 +164,6 @@ fun EditRoomPostScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ── Sección ubicación ──────────────────────────────────────
                 EditFormSection(title = "Ubicación") {
                     EditFormField(
                         value         = roomPost.address,
@@ -192,7 +184,6 @@ fun EditRoomPostScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ── Sección detalles ───────────────────────────────────────
                 EditFormSection(title = "Detalles") {
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
@@ -229,7 +220,6 @@ fun EditRoomPostScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ── Progreso de subida ─────────────────────────────────────
                 AnimatedVisibility(
                     visible = uploadProgress != null,
                     enter   = fadeIn(),
@@ -258,7 +248,6 @@ fun EditRoomPostScreen(
                     }
                 }
 
-                // ── Error de validación ────────────────────────────────────
                 AnimatedVisibility(
                     visible = validationError != null,
                     enter   = fadeIn(),
@@ -292,7 +281,6 @@ fun EditRoomPostScreen(
                     }
                 }
 
-                // ── Botón guardar ──────────────────────────────────────────
                 Button(
                     onClick  = { showConfirmDialog = true },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -325,8 +313,6 @@ fun EditRoomPostScreen(
     }
 }
 
-// ── Contenedor de sección con título ─────────────────────────────────────────
-
 @Composable
 private fun EditFormSection(
     title:   String,
@@ -352,8 +338,6 @@ private fun EditFormSection(
         }
     }
 }
-
-// ── Campo de formulario ───────────────────────────────────────────────────────
 
 @Composable
 private fun EditFormField(
@@ -401,8 +385,6 @@ private fun EditFormField(
     )
 }
 
-// ── Selector de imágenes (existentes + nuevas) ────────────────────────────────
-
 @Composable
 private fun EditImagePickerSection(
     existingUrls:     List<String>,
@@ -441,21 +423,18 @@ private fun EditImagePickerSection(
             verticalArrangement   = Arrangement.spacedBy(8.dp),
             modifier              = Modifier.fillMaxWidth()
         ) {
-            // Imágenes ya subidas (URLs remotas)
             existingUrls.forEach { url ->
                 EditThumbnail(
                     model    = url,
                     onRemove = { onRemoveExisting(url) }
                 )
             }
-            // Imágenes nuevas seleccionadas localmente
             newUris.forEach { uri ->
                 EditThumbnail(
                     model    = uri,
                     onRemove = { onRemoveNew(uri) }
                 )
             }
-            // Botón añadir si hay hueco
             if (total < 5) {
                 EditAddImageButton(
                     onClick  = onAddImages,
