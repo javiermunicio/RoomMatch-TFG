@@ -1,5 +1,6 @@
 package com.example.roommatch_pmdm
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
+import com.example.roommatch_pmdm.notifications.NotificationListenerService
 import com.example.roommatch_pmdm.notifications.RequestNotificationPermission
 import com.example.roommatch_pmdm.presentation.navigation.NavGraph
 import com.example.roommatch_pmdm.presentation.navigation.Screen
@@ -25,6 +27,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val authRepository: AuthRepository by inject()
+
+        if (authRepository.isLoggedIn) {
+            startService(Intent(this, NotificationListenerService::class.java))
+        }
+
         setContent {
             val isDark by themeViewModel.isDarkTheme.collectAsState()
 
@@ -35,7 +44,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val authRepository: AuthRepository by inject()
                     val startDestination = if (authRepository.isLoggedIn) {
                         Screen.Home.route
                     } else {
