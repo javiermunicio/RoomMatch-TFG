@@ -11,6 +11,7 @@ import com.example.roommatch_pmdm.domain.model.ChatUser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -48,58 +49,66 @@ class ChatListViewModel(
                     flow {
                         emit(emptyList<ChatUser>())
                         _isLoading.value = true
+                        try {
+                            val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
+                            val activeIds  = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
+                            val allUserIds = (matchedIds + activeIds).toList()
 
-                        val matchedIds = matchRepository.getMatchedUserIds(currentUserId).toSet()
-                        val activeIds  = chatRepository.getActiveConversationUserIds(currentUserId).toSet()
-                        val allUserIds = (matchedIds + activeIds).toList()
+                            if (allUserIds.isEmpty()) {
+                                _isLoading.value = false
+                                emit(emptyList())
+                                return@flow
+                            }
 
-                        if (allUserIds.isEmpty()) {
+                            val blockedByMe   = blockRepository.getBlockedUserIds(currentUserId).toSet()
+                            val blockedByThem = blockRepository.getUsersWhoBlockedMe(currentUserId).toSet()
+                            val allBlocked    = blockedByMe + blockedByThem
+                            val filteredUserIds = allUserIds.filter { it !in allBlocked }
+                            val realtimeIds = filteredUserIds.take(MAX_REALTIME_CHATS)
+                            val staticIds   = filteredUserIds.drop(MAX_REALTIME_CHATS)
+
+                            val realtimeFlows = realtimeIds.map { userId ->
+                                combine(
+                                    chatRepository.getLastMessageFlow(currentUserId, userId),
+                                    chatRepository.getUnreadCountFlow(currentUserId, userId)
+                                ) { lastMsg, _ ->
+                                    buildChatUser(currentUserId, userId, lastMsg)
+                                }
+                            }
+
+                            val staticFlow = flowOf(
+                                staticIds.mapNotNull { userId ->
+                                    val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
+                                    buildChatUser(currentUserId, userId, lastMsg)
+                                }
+                            )
+
+                            val combinedFlow = if (realtimeFlows.isEmpty()) {
+                                staticFlow
+                            } else {
+                                combine(
+                                    combine(realtimeFlows) { it.filterNotNull().toList() },
+                                    staticFlow
+                                ) { realtimeList, staticList ->
+                                    (realtimeList + staticList).sortedByDescending { it.timestamp }
+                                }
+                            }
+
+                            combinedFlow.collect { users ->
+                                _isLoading.value = false
+                                emit(users)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                             _isLoading.value = false
                             emit(emptyList())
-                            return@flow
-                        }
-
-                        val blockedByMe   = blockRepository.getBlockedUserIds(currentUserId).toSet()
-                        val blockedByThem = blockRepository.getUsersWhoBlockedMe(currentUserId).toSet()
-                        val allBlocked    = blockedByMe + blockedByThem
-
-                        val filteredUserIds = allUserIds.filter { it !in allBlocked }
-
-                        val realtimeIds = filteredUserIds.take(MAX_REALTIME_CHATS)
-                        val staticIds   = filteredUserIds.drop(MAX_REALTIME_CHATS)
-
-                        val realtimeFlows = realtimeIds.map { userId ->
-                            combine(
-                                chatRepository.getLastMessageFlow(currentUserId, userId),
-                                chatRepository.getUnreadCountFlow(currentUserId, userId)
-                            ) { lastMsg, _ ->
-                                buildChatUser(currentUserId, userId, lastMsg)
-                            }
-                        }
-
-                        val staticFlow = flowOf(
-                            staticIds.mapNotNull { userId ->
-                                val lastMsg = chatRepository.getLastMessage(currentUserId, userId)
-                                buildChatUser(currentUserId, userId, lastMsg)
-                            }
-                        )
-
-                        val combinedFlow = if (realtimeFlows.isEmpty()) {
-                            staticFlow
-                        } else {
-                            combine(
-                                combine(realtimeFlows) { it.filterNotNull().toList() },
-                                staticFlow
-                            ) { realtimeList, staticList ->
-                                (realtimeList + staticList).sortedByDescending { it.timestamp }
-                            }
-                        }
-
-                        combinedFlow.collect { users ->
-                            _isLoading.value = false
-                            emit(users)
                         }
                     }
+                }
+                .catch { e ->
+                    e.printStackTrace()
+                    _isLoading.value = false
+                    _chatUsers.value = emptyList()
                 }
                 .collect { users -> _chatUsers.value = users }
         }
