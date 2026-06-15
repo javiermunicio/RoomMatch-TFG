@@ -7,6 +7,7 @@ import com.example.roommatch_pmdm.data.repositories.AuthRepository
 import com.example.roommatch_pmdm.data.remote.StorageRepository
 import com.example.roommatch_pmdm.domain.model.RoomPost
 import com.example.roommatch_pmdm.domain.usecase.AddRoomPostUseCase
+import com.example.roommatch_pmdm.utils.DateValidator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -80,9 +81,8 @@ class AddRoomPostViewModel(
         if (post.availableFrom.isBlank()) {
             _validationError.value = "La fecha de disponibilidad es obligatoria"; return
         }
-        val dateRegex = Regex("""^\d{2}/\d{2}/\d{4}$""")
-        if (!dateRegex.matches(post.availableFrom)) {
-            _validationError.value = "Formato de fecha incorrecto (DD/MM/YYYY)"; return
+        DateValidator.validate(post.availableFrom)?.let {
+            _validationError.value = it; return
         }
 
         _validationError.value = null

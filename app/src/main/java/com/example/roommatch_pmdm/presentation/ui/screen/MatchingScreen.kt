@@ -46,6 +46,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.EuroSymbol
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.material.icons.filled.PeopleAlt
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.text.style.TextAlign
+import com.example.roommatch_pmdm.ui.theme.RoomBlue
 
 @Composable
 fun MatchingScreen(
@@ -87,7 +91,7 @@ fun MatchingScreen(
                 )
             }
         } else {
-            Text("No hay más usuarios disponibles")
+            EmptyMatchingState(onReload = { viewModel.reload() })
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -512,6 +516,66 @@ fun HousRoofShape(roofColor: Color, accentColor: Color) {
             topLeft = Offset(w * 0.65f, h * 0.25f),
             size    = Size(w * 0.06f, h * 0.45f)
         )
+    }
+}
+@Composable
+private fun EmptyMatchingState(onReload: () -> Unit) {
+    Column(
+        modifier            = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Surface(
+            modifier = Modifier.size(96.dp),
+            shape    = CircleShape,
+            color    = MaterialTheme.colorScheme.surfaceVariant,
+            border   = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            )
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector        = Icons.Filled.PeopleAlt,
+                    contentDescription = null,
+                    tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    modifier           = Modifier.size(44.dp)
+                )
+            }
+        }
+
+        Text(
+            text       = "Sin más perfiles por ahora",
+            style      = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color      = MaterialTheme.colorScheme.onSurface,
+            textAlign  = TextAlign.Center
+        )
+
+        Text(
+            text      = "Has visto todos los perfiles disponibles.\nVuelve más tarde o recarga para ver si hay nuevos compañeros.",
+            style     = MaterialTheme.typography.bodySmall,
+            color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp
+        )
+
+        Button(
+            onClick  = onReload,
+            shape    = MaterialTheme.shapes.extraLarge,
+            colors   = ButtonDefaults.buttonColors(containerColor = RoomBlue),
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Icon(
+                imageVector        = Icons.Filled.Refresh,
+                contentDescription = null,
+                modifier           = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Volver a cargar", fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
