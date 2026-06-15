@@ -17,9 +17,12 @@ object NotificationHelper {
     const val CHANNEL_CHAT    = "channel_chat"
     const val CHANNEL_MATCH   = "channel_match"
     const val CHANNEL_INTEREST = "channel_interest"
+    const val CHANNEL_SILENT = "channel_silent"
+
     private const val NOTIF_CHAT     = 1001
     private const val NOTIF_MATCH    = 1002
     private const val NOTIF_INTEREST = 1003
+
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -45,6 +48,19 @@ object NotificationHelper {
                 ).apply {
                     description = "Notificaciones cuando haces match con alguien"
                     enableVibration(true)
+                }
+            )
+
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_SILENT,
+                    "Servicio en segundo plano",
+                    NotificationManager.IMPORTANCE_MIN  // sin sonido, sin icono en statusbar
+                ).apply {
+                    description = "Mantiene las notificaciones activas en segundo plano"
+                    setShowBadge(false)
+                    setSound(null, null)
+                    enableVibration(false)
                 }
             )
 
@@ -125,4 +141,17 @@ object NotificationHelper {
         NotificationManagerCompat.from(context)
             .notify(NOTIF_INTEREST, notification)
     }
+    fun buildSilentForegroundNotification(context: Context): android.app.Notification {
+        return NotificationCompat.Builder(context, CHANNEL_SILENT)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("RoomMatch activo")
+            .setContentText("Recibirás notificaciones en tiempo real")
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setSilent(true)
+            .setOngoing(true)
+            .setShowWhen(false)
+            .setContentIntent(mainPendingIntent(context))
+            .build()
+    }
+
 }

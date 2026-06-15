@@ -9,6 +9,7 @@ import com.example.roommatch_pmdm.data.repositories.RoomPostRepository
 import com.example.roommatch_pmdm.domain.model.RoomPost
 import com.example.roommatch_pmdm.domain.usecase.GetRoomPostByIdUseCase
 import com.example.roommatch_pmdm.domain.usecase.UpdateRoomPostUseCase
+import com.example.roommatch_pmdm.utils.DateValidator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -83,9 +84,8 @@ class EditRoomPostViewModel(
         if (post.price <= 0)              { _validationError.value = "El precio debe ser mayor que 0"; return }
         if (post.address.isBlank())       { _validationError.value = "La dirección es obligatoria"; return }
         if (post.availableFrom.isBlank()) { _validationError.value = "La fecha de disponibilidad es obligatoria"; return }
-        val dateRegex = Regex("""^\d{2}/\d{2}/\d{4}$""")
-        if (!dateRegex.matches(post.availableFrom)) {
-            _validationError.value = "Formato de fecha incorrecto (DD/MM/YYYY)"; return
+        DateValidator.validate(post.availableFrom)?.let {
+            _validationError.value = it; return
         }
 
         _validationError.value = null

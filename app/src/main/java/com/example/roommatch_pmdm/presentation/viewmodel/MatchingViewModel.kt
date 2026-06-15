@@ -1,25 +1,16 @@
 package com.example.roommatch_pmdm.presentation.viewmodel
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.content.ContextCompat
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.roommatch_pmdm.data.repositories.AuthRepository
-import com.example.roommatch_pmdm.data.repositories.BlockRepository
-import com.example.roommatch_pmdm.data.repositories.MatchRepository
 import com.example.roommatch_pmdm.data.repositories.UserRepository
-import com.example.roommatch_pmdm.domain.model.User
 import com.example.roommatch_pmdm.domain.model.UserCard
 import com.example.roommatch_pmdm.domain.usecase.GetUsersToSwipeUseCase
 import com.example.roommatch_pmdm.domain.usecase.SaveLikeAndCheckMatchUseCase
-import com.example.roommatch_pmdm.notifications.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 class MatchingViewModel(
     private val authRepository: AuthRepository,
@@ -77,34 +68,6 @@ class MatchingViewModel(
         }
     }
 
-    private fun computeCompatibilityScore(currentUser: User, candidate: User): Int {
-        var score = 0
-
-        if (currentUser.location.isNotBlank() &&
-            candidate.location.equals(currentUser.location, ignoreCase = true)
-        ) {
-            score += 10
-        }
-
-        val commonHabits = candidate.habits.count { it in currentUser.habits }
-        score += commonHabits * 3
-
-        if (currentUser.budget > 0 && candidate.budget > 0) {
-            val budgetDiff = abs(currentUser.budget - candidate.budget)
-            score += when {
-                budgetDiff <= 200 -> 5
-                budgetDiff <= 500 -> 2
-                else              -> 0
-            }
-        }
-
-        if (candidate.bio.isNotBlank() && candidate.profileImage.isNotBlank()) {
-            score += 2
-        }
-
-        return score
-    }
-
     fun onLike() {
         val currentUserId = authRepository.currentUser?.uid ?: return
         val currentCard   = _userCards.value.getOrNull(_currentIndex.value) ?: return
@@ -129,4 +92,8 @@ class MatchingViewModel(
     private fun moveToNextCard() { _currentIndex.value += 1 }
 
     fun dismissMatchPopup() { _showMatchPopup.value = false }
+    fun reload() {
+        _currentIndex.value = 0
+        loadUserCards()
+    }
 }
