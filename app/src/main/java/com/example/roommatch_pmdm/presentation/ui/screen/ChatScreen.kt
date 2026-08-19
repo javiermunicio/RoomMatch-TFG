@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,8 +42,10 @@ import com.example.roommatch_pmdm.presentation.viewmodel.ChatListViewModel
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 
-private val BubbleMe    = Color(0xFF1E88E5)
+private val BubbleMe @Composable get() = MaterialTheme.colorScheme.primary
 private val BubbleOther @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 private val TextMe @Composable get() = MaterialTheme.colorScheme.onPrimary
 private val TextOther @Composable get() = MaterialTheme.colorScheme.onSurface
@@ -168,7 +171,8 @@ fun ChatUserItem(chatUser: ChatUser, currentUserId: String, onItemClick: () -> U
                 AsyncImage(
                     model        = chatUser.profileImage.ifEmpty { "https://via.placeholder.com/56" },
                     contentDescription = null,
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    modifier     = Modifier.fillMaxSize().clip(CircleShape)
                 )
             }
 
@@ -287,7 +291,16 @@ fun ChatDetailScreen(
         onDispose { viewModel.onChatClosed() }
     }
 
-    LaunchedEffect(messages.size) {
+    // Scroll inicial: en cuanto llegan los mensajes por primera vez, ir al final
+    LaunchedEffect(chatUserId) {
+        val firstNonEmpty = snapshotFlow { messages }
+            .filter { it.isNotEmpty() }
+            .first()
+        listState.scrollToItem(firstNonEmpty.lastIndex.coerceAtLeast(0))
+    }
+
+    // Scroll cuando cambia el último mensaje (llega uno nuevo, o cambia su contenido/orden)
+    LaunchedEffect(messages.lastOrNull()?.id, messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
     }
 
@@ -460,10 +473,11 @@ fun ChatDetailScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp, alignment = Alignment.Bottom),
+                contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                items(messages, key = { it.id }) { message ->
+                itemsIndexed(messages, key = { index, message -> "${message.id}_$index" }) { _, message ->
                     MessageBubble(message = message, currentUserId = currentUid)
                 }
             }

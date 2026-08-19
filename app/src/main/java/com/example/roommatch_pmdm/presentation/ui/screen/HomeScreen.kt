@@ -102,11 +102,7 @@ fun HomeScreen(navController: NavController) {
             }
             // ── CHAT ──────────────────────────────────────────────────────
             composable(Screen.ChatList.route) {
-                ChatListScreen(navController = innerNavController)
-            }
-            composable(Screen.ChatDetail.route) { backStackEntry ->
-                val chatUserId = backStackEntry.arguments?.getString("chatUserId") ?: ""
-                ChatDetailScreen(chatUserId = chatUserId, navController = innerNavController)
+                ChatListScreen(navController = navController)
             }
             // ── PERFIL ────────────────────────────────────────────────────
             composable(Screen.Profile.route) {
